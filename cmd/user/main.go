@@ -49,7 +49,7 @@ func (s *server) Get(ctx context.Context, req *desc.GetRequest) (*desc.GetRespon
 		Id:        req.GetId(),
 		Name:      "<unimplemented>",
 		Email:     "<unimplemented>",
-		Role:      desc.Role_ROLE_USER,
+		Role:      desc.Role_UNKNOWN,
 		CreatedAt: timestamppb.Now(),
 		UpdatedAt: timestamppb.Now(),
 	}, nil
