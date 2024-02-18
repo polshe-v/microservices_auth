@@ -19,7 +19,7 @@ import (
 
 const (
 	grpcTransport = "tcp"
-	grpcIP        = "127.0.0.1"
+	grpcIP        = "0.0.0.0"
 	grpcPort      = 50000
 	delim         = "---"
 )
