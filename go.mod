@@ -4,6 +4,7 @@ go 1.22.0
 
 require (
 	github.com/golang/protobuf v1.5.3
+	github.com/joho/godotenv v1.5.1
 	google.golang.org/grpc v1.61.1
 	google.golang.org/protobuf v1.32.0
 )

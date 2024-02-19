@@ -4,11 +4,11 @@ volumes:
   postgres_volume:
 
 services:
-  auth:
-    image: auth:1.0.0
-    environment:
-    ports:
-      - "${AUTH_PORT}:50000"
+  # auth:
+    # image: auth:1.0.0
+    # environment:
+    # ports:
+    #   - "${AUTH_PORT}:50000"
   pg:
     image: postgres:16.2-alpine3.19
     environment:
@@ -19,8 +19,8 @@ services:
       - "${PG_PORT}:5432"
     volumes:
       - postgres_volume:/var/lib/postgresql/data
-  migrator:
-    image: migrator:1.0.0
-    restart: on-failure
-    environment:
-      DB_HOST: pg
+  # migrator:
+  #   image: migrator:1.0.0
+  #   restart: on-failure
+  #   environment:
+  #     DB_HOST: pg
