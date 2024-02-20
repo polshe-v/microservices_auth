@@ -1,4 +1,4 @@
-include config_stage.env
+include stage.env
 
 LOCAL_BIN:=$(CURDIR)/bin
 BINARY_NAME=main
