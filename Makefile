@@ -1,10 +1,6 @@
-# ifeq ($(ENV), stage)
-# 	include stage.env
-# else ifeq ($(ENV), prod)
-# 	include prod.env
-# endif
-
-include $(ENV).env
+ifneq ($(ENV),)
+	include $(ENV).env
+endif
 
 LOCAL_BIN:=$(CURDIR)/bin
 BINARY_NAME=main
@@ -41,6 +37,11 @@ generate-api-v1:
 	--plugin=protoc-gen-go-grpc=$(LOCAL_BIN)/protoc-gen-go-grpc \
 	api/user_v1/user.proto
 
+check-env:
+ifeq ($(ENV),)
+	$(error No environment specified)
+endif
+
 # ##### #
 # BUILD #
 # ##### #
@@ -50,31 +51,31 @@ build-app:
 
 docker-build: docker-build-app docker-build-migrator
 
-docker-build-app:
+docker-build-app: check-env
 	docker buildx build --no-cache --platform linux/amd64 -t auth:${APP_IMAGE_TAG} --build-arg="ENV=${ENV}" --build-arg="CONFIG=${CONFIG}" .
 
-docker-build-migrator:
+docker-build-migrator: check-env
 	docker buildx build --no-cache --platform linux/amd64 -t migrator:${MIGRATOR_IMAGE_TAG} -f migrator.Dockerfile --build-arg="ENV=${ENV}" .
 
 # ###### #
 # DEPLOY #
 # ###### #
 
-docker-deploy: docker-build
+docker-deploy: check-env docker-build
 	docker compose --env-file=$(ENV).env up -d
 
-local-migration-status:
+local-migration-status: check-env
 	$(LOCAL_BIN)/goose -dir ${LOCAL_MIGRATION_DIR} postgres ${LOCAL_MIGRATION_DSN} status -v
 
-local-migration-up:
+local-migration-up: check-env
 	$(LOCAL_BIN)/goose -dir ${LOCAL_MIGRATION_DIR} postgres ${LOCAL_MIGRATION_DSN} up -v
 
-local-migration-down:
+local-migration-down: check-env
 	$(LOCAL_BIN)/goose -dir ${LOCAL_MIGRATION_DIR} postgres ${LOCAL_MIGRATION_DSN} down -v
 
 # #### #
 # STOP #
 # #### #
 
-docker-stop:
+docker-stop: check-env
 	docker compose --env-file=$(ENV).env down
