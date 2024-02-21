@@ -4,21 +4,38 @@ volumes:
   postgres_volume:
 
 services:
-  # auth:
-    # image: auth:1.0.0
-    # environment:
-    # ports:
-    #   - "${AUTH_PORT}:50000"
-  pg:
-    image: postgres:16.2-alpine3.19
+  auth:
+    image: auth:1.0.0
+    container_name: auth
     env_file:
-      - config_stage.env
+      - ${ENV}.env
+    ports:
+      - "${GRPC_PORT}:${GRPC_PORT}"
+    depends_on:
+      db:
+        condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
+  db:
+    image: postgres:${POSTGRES_IMAGE_TAG}
+    container_name: db
+    env_file:
+      - ${ENV}.env
     ports:
       - "${POSTGRES_PORT}:5432"
     volumes:
       - postgres_volume:/var/lib/postgresql/data
-  # migrator:
-  #   image: migrator:1.0.0
-  #   restart: on-failure
-  #   environment:
-  #     DB_HOST: pg
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 1s
+      timeout: 5s
+      retries: 5
+  migrator:
+    image: migrator:${MIGRATOR_IMAGE_TAG}
+    container_name: migrator
+    restart: on-failure
+    environment:
+      DB_HOST: db
+    depends_on:
+      db:
+        condition: service_healthy

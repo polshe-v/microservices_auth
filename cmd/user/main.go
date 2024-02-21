@@ -112,28 +112,7 @@ func (s *server) Get(ctx context.Context, req *desc.GetRequest) (*desc.GetRespon
 }
 
 func (s *server) Update(ctx context.Context, req *desc.UpdateRequest) (*empty.Empty, error) {
-	log.Printf("\n%s\nID: %d\nName: %s\nEmail: %s\nRole: %v\n%s", delim, req.GetId(), req.GetName(), req.GetEmail(), req.GetRole(), delim)
-
-	/*	builderUpdate := sq.Update("users").
-		SetMap(map[string]interface{}{
-			"id":         req.GetId(),
-			"name":       req.GetName(),
-			"email":      req.GetEmail(),
-			"role":       req.GetRole(),
-			"updated_at": timestamppb.Now(),
-		}).
-		PlaceholderFormat(sq.Dollar).
-		Where(sq.Eq{"id": req.GetId()})
-	*/
-	/*	builderUpdate := sq.Update("users").
-		Set("id", req.GetId()).
-		Set("name", req.GetName()).
-		Set("email", req.GetEmail()).
-		Set("role", req.GetRole()).
-		Set("updated_at", timestamppb.Now()).
-		PlaceholderFormat(sq.Dollar).
-		Where(sq.Eq{"id": req.GetId()})
-	*/
+	log.Printf("\n%s\nID: %d\nName: %s\nEmail: %s\nRole: %v\n%s", delim, req.GetId(), req.GetName().GetValue(), req.GetEmail().GetValue(), req.GetRole(), delim)
 
 	builderUpdate := sq.Update("users").
 		SetMap(map[string]interface{}{

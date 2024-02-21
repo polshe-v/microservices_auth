@@ -1,4 +1,5 @@
 FROM golang:1.22.0-alpine3.19 AS builder
+ARG ENV
 
 RUN apk update && apk upgrade --available && \
     apk add make && \
@@ -15,16 +16,17 @@ WORKDIR /opt/app/
 COPY . .
 
 RUN go mod download && go mod verify
-RUN make build
+RUN make build-app ENV=${ENV}
 
 FROM scratch
+ARG CONFIG
 
 WORKDIR /opt/app/
 COPY --from=builder /opt/app/bin/main .
 COPY --from=builder /etc/passwd /etc/passwd
 COPY --from=builder /etc/group /etc/group
+COPY --from=builder /opt/app/${CONFIG} ./config
 
-EXPOSE 50000/tcp
 USER auth:auth
 
-CMD ["./main"]
+CMD ["./main", "-config=./config"]
