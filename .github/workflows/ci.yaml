@@ -29,7 +29,7 @@ jobs:
         run: |
           TAG=$(echo $GITHUB_SHA | head -c7)
           docker buildx create --use
-          docker buildx build --no-cache --push --tag {{ secrets.REGISTRY_USERNAME }}/$IMAGE_NAME:$TAG --build-arg="ENV=${{ vars.ENV }}" --build-arg="CONFIG=${{ vars.CONFIG }}" .
+          docker buildx build --no-cache --push --tag {{ secrets.REGISTRY_USERNAME }}/$IMAGE_NAME:$TAG --build-arg="ENV=${{ vars.ENV }}" --build-arg="CONFIG=${{ vars.CONFIG }}" ./
 
   deploy-image:
     runs-on: ubuntu-22.04
