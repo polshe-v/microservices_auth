@@ -29,7 +29,7 @@ jobs:
         run: |
           TAG=$(echo $GITHUB_SHA | head -c7)
           docker buildx create --use
-          docker buildx build --no-cache --push --tag $REGISTRY/$IMAGE_NAME:$TAG --build-arg="ENV=${{ vars.ENV }}" --build-arg="CONFIG=${{ vars.CONFIG }}" .
+          docker buildx build --no-cache --push --tag $REGISTRY/$IMAGE_NAME:$TAG --build-arg="ENV=stage" --build-arg="CONFIG=stage.env" .
 
   deploy-image:
     runs-on: ubuntu-22.04
@@ -58,4 +58,4 @@ jobs:
             docker rm $CONTAINER_NAME
             
             # Run a new container from a new image
-            docker run -d -p 50051:50051 --name $CONTAINER_NAME -t $REGISTRY/$IMAGE_NAME:$TAG_NAME
+            docker run -d -p 50000:50000 --name $CONTAINER_NAME -t $REGISTRY/$IMAGE_NAME:$TAG_NAME
