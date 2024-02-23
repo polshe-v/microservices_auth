@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"flag"
 	"log"
 	"net"
@@ -44,7 +45,9 @@ func (s *server) Create(ctx context.Context, req *desc.CreateRequest) (*desc.Cre
 	// Hashing the password.
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.GetPassword()), bcryptCost)
 	if err != nil {
-		panic(err)
+		errMsg := errors.New("failed to process password")
+		log.Printf("%v: %v", errMsg, err)
+		return nil, errMsg
 	}
 
 	builderInsert := sq.Insert("users").
@@ -55,13 +58,17 @@ func (s *server) Create(ctx context.Context, req *desc.CreateRequest) (*desc.Cre
 
 	query, args, err := builderInsert.ToSql()
 	if err != nil {
-		log.Fatalf("failed to build query: %v", err)
+		errMsg := errors.New("failed to build query")
+		log.Printf("%v: %v", errMsg, err)
+		return nil, errMsg
 	}
 
 	var id int64
 	err = s.pool.QueryRow(ctx, query, args...).Scan(&id)
 	if err != nil {
-		log.Fatalf("failed to create user: %v", err)
+		errMsg := errors.New("failed to create user")
+		log.Printf("%v: %v", errMsg, err)
+		return nil, errMsg
 	}
 
 	return &desc.CreateResponse{
@@ -80,7 +87,9 @@ func (s *server) Get(ctx context.Context, req *desc.GetRequest) (*desc.GetRespon
 
 	query, args, err := builderSelect.ToSql()
 	if err != nil {
-		log.Fatalf("failed to build query: %v", err)
+		errMsg := errors.New("failed to build query")
+		log.Printf("%v: %v", errMsg, err)
+		return nil, errMsg
 	}
 
 	var id int64
@@ -91,9 +100,13 @@ func (s *server) Get(ctx context.Context, req *desc.GetRequest) (*desc.GetRespon
 	err = s.pool.QueryRow(ctx, query, args...).Scan(&id, &name, &email, &role, &createdAt, &updatedAt)
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			return nil, err
+			errMsg := errors.New("no user with given id")
+			log.Printf("%v: %v", errMsg, err)
+			return nil, errMsg
 		}
-		log.Fatalf("failed to select user: %v", err)
+		errMsg := errors.New("failed to read user info")
+		log.Printf("%v: %v", errMsg, err)
+		return nil, errMsg
 	}
 
 	var updatedAtTime *timestamppb.Timestamp
@@ -126,10 +139,19 @@ func (s *server) Update(ctx context.Context, req *desc.UpdateRequest) (*empty.Em
 
 	query, args, err := builderUpdate.ToSql()
 	if err != nil {
-		log.Fatalf("failed to build query: %v", err)
+		errMsg := errors.New("failed to build query")
+		log.Printf("%v: %v", errMsg, err)
+		return nil, errMsg
 	}
 
-	s.pool.QueryRow(ctx, query, args...)
+	res, err := s.pool.Exec(ctx, query, args...)
+	if err != nil {
+		errMsg := errors.New("failed to update user info")
+		log.Printf("%v: %v", errMsg, err)
+		return nil, errMsg
+	}
+	log.Printf("result: %v", res)
+
 	return &empty.Empty{}, nil
 }
 
@@ -142,10 +164,19 @@ func (s *server) Delete(ctx context.Context, req *desc.DeleteRequest) (*empty.Em
 
 	query, args, err := builderDelete.ToSql()
 	if err != nil {
-		log.Fatalf("failed to build query: %v", err)
+		errMsg := errors.New("failed to build query")
+		log.Printf("%v: %v", errMsg, err)
+		return nil, errMsg
 	}
 
-	s.pool.QueryRow(ctx, query, args...)
+	res, err := s.pool.Exec(ctx, query, args...)
+	if err != nil {
+		errMsg := errors.New("failed to delete user")
+		log.Printf("%v: %v", errMsg, err)
+		return nil, errMsg
+	}
+	log.Printf("result: %v", res)
+
 	return &empty.Empty{}, nil
 }
 
@@ -157,29 +188,34 @@ func main() {
 	// Read config file.
 	err := config.Load(configPath)
 	if err != nil {
-		log.Fatalf("failed to load config: %v", err)
+		log.Printf("failed to load config: %v", err)
+		return
 	}
 
 	grpcConfig, err := env.NewGrpcConfig()
 	if err != nil {
-		log.Fatalf("failed to get grpc config: %v", err)
+		log.Printf("failed to get grpc config: %v", err)
+		return
 	}
 
 	// Open IP and port for server.
 	lis, err := net.Listen(grpcConfig.Transport(), grpcConfig.Address())
 	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
+		log.Printf("failed to listen: %v", err)
+		return
 	}
 
 	pgConfig, err := env.NewPgConfig()
 	if err != nil {
-		log.Fatalf("failed to get pg config: %v", err)
+		log.Printf("failed to get pg config: %v", err)
+		return
 	}
 
 	// Create database connections pool.
 	pool, err := pgxpool.New(ctx, pgConfig.DSN())
 	if err != nil {
-		log.Fatalf("failed to connect to database: %v", err)
+		log.Printf("failed to connect to database: %v", err)
+		return
 	}
 	defer pool.Close()
 
@@ -195,6 +231,7 @@ func main() {
 	log.Printf("server listening at %v", lis.Addr())
 
 	if err = s.Serve(lis); err != nil {
-		log.Fatalf("failed to serve: %v", err)
+		log.Printf("failed to serve: %v", err)
+		return
 	}
 }
