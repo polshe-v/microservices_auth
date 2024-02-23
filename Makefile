@@ -6,7 +6,7 @@ LOCAL_BIN:=$(CURDIR)/bin
 BINARY_NAME=main
 CONFIG=$(ENV).env
 LOCAL_MIGRATION_DIR=$(MIGRATION_DIR)
-LOCAL_MIGRATION_DSN="host=localhost port=$(POSTGRES_PORT) dbname=$(POSTGRES_DB) user=$(POSTGRES_USER) password=$(POSTGRES_PASSWORD) sslmode=disable"
+LOCAL_MIGRATION_DSN="host=localhost port=$(POSTGRES_PORT_LOCAL) dbname=$(POSTGRES_DB) user=$(POSTGRES_USER) password=$(POSTGRES_PASSWORD) sslmode=disable"
 
 # #################### #
 # DEPENDENCIES & TOOLS #
@@ -55,7 +55,7 @@ docker-build-app: check-env
 	docker buildx build --no-cache --platform linux/amd64 -t auth:${APP_IMAGE_TAG} --build-arg="ENV=${ENV}" --build-arg="CONFIG=${CONFIG}" .
 
 docker-build-migrator: check-env
-	docker buildx build --no-cache --platform linux/amd64 -t migrator:${MIGRATOR_IMAGE_TAG} -f migrator.Dockerfile --build-arg="ENV=${ENV}" .
+	docker buildx build --no-cache --platform linux/amd64 -t migrator-auth:${MIGRATOR_IMAGE_TAG} -f migrator.Dockerfile --build-arg="ENV=${ENV}" .
 
 # ###### #
 # DEPLOY #
