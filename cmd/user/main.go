@@ -24,6 +24,7 @@ import (
 )
 
 var configPath string
+var errQueryBuild = errors.New("failed to build query")
 
 func init() {
 	flag.StringVar(&configPath, "config", ".env", "Path to config file")
@@ -45,9 +46,8 @@ func (s *server) Create(ctx context.Context, req *desc.CreateRequest) (*desc.Cre
 	// Hashing the password.
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.GetPassword()), bcryptCost)
 	if err != nil {
-		errMsg := errors.New("failed to process password")
-		log.Printf("%v: %v", errMsg, err)
-		return nil, errMsg
+		log.Printf("%v", err)
+		return nil, errors.New("failed to process password")
 	}
 
 	builderInsert := sq.Insert("users").
@@ -58,17 +58,15 @@ func (s *server) Create(ctx context.Context, req *desc.CreateRequest) (*desc.Cre
 
 	query, args, err := builderInsert.ToSql()
 	if err != nil {
-		errMsg := errors.New("failed to build query")
-		log.Printf("%v: %v", errMsg, err)
-		return nil, errMsg
+		log.Printf("%v", err)
+		return nil, errQueryBuild
 	}
 
 	var id int64
 	err = s.pool.QueryRow(ctx, query, args...).Scan(&id)
 	if err != nil {
-		errMsg := errors.New("failed to create user")
-		log.Printf("%v: %v", errMsg, err)
-		return nil, errMsg
+		log.Printf("%v", err)
+		return nil, errors.New("failed to create user")
 	}
 
 	return &desc.CreateResponse{
@@ -87,9 +85,8 @@ func (s *server) Get(ctx context.Context, req *desc.GetRequest) (*desc.GetRespon
 
 	query, args, err := builderSelect.ToSql()
 	if err != nil {
-		errMsg := errors.New("failed to build query")
-		log.Printf("%v: %v", errMsg, err)
-		return nil, errMsg
+		log.Printf("%v", err)
+		return nil, errQueryBuild
 	}
 
 	var id int64
@@ -100,13 +97,11 @@ func (s *server) Get(ctx context.Context, req *desc.GetRequest) (*desc.GetRespon
 	err = s.pool.QueryRow(ctx, query, args...).Scan(&id, &name, &email, &role, &createdAt, &updatedAt)
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			errMsg := errors.New("no user with given id")
-			log.Printf("%v: %v", errMsg, err)
-			return nil, errMsg
+			log.Printf("%v", err)
+			return nil, errors.New("no user with given id")
 		}
-		errMsg := errors.New("failed to read user info")
-		log.Printf("%v: %v", errMsg, err)
-		return nil, errMsg
+		log.Printf("%v", err)
+		return nil, errors.New("failed to read user info")
 	}
 
 	var updatedAtTime *timestamppb.Timestamp
@@ -139,16 +134,14 @@ func (s *server) Update(ctx context.Context, req *desc.UpdateRequest) (*empty.Em
 
 	query, args, err := builderUpdate.ToSql()
 	if err != nil {
-		errMsg := errors.New("failed to build query")
-		log.Printf("%v: %v", errMsg, err)
-		return nil, errMsg
+		log.Printf("%v", err)
+		return nil, errQueryBuild
 	}
 
 	res, err := s.pool.Exec(ctx, query, args...)
 	if err != nil {
-		errMsg := errors.New("failed to update user info")
-		log.Printf("%v: %v", errMsg, err)
-		return nil, errMsg
+		log.Printf("%v", err)
+		return nil, errors.New("failed to update user info")
 	}
 	log.Printf("result: %v", res)
 
@@ -164,16 +157,14 @@ func (s *server) Delete(ctx context.Context, req *desc.DeleteRequest) (*empty.Em
 
 	query, args, err := builderDelete.ToSql()
 	if err != nil {
-		errMsg := errors.New("failed to build query")
-		log.Printf("%v: %v", errMsg, err)
-		return nil, errMsg
+		log.Printf("%v", err)
+		return nil, errQueryBuild
 	}
 
 	res, err := s.pool.Exec(ctx, query, args...)
 	if err != nil {
-		errMsg := errors.New("failed to delete user")
-		log.Printf("%v: %v", errMsg, err)
-		return nil, errMsg
+		log.Printf("%v", err)
+		return nil, errors.New("failed to delete user")
 	}
 	log.Printf("result: %v", res)
 
@@ -188,34 +179,29 @@ func main() {
 	// Read config file.
 	err := config.Load(configPath)
 	if err != nil {
-		log.Printf("failed to load config: %v", err)
-		return
+		log.Fatalf("failed to load config: %v", err)
 	}
 
 	grpcConfig, err := env.NewGrpcConfig()
 	if err != nil {
-		log.Printf("failed to get grpc config: %v", err)
-		return
+		log.Fatalf("failed to get grpc config: %v", err)
 	}
 
 	// Open IP and port for server.
 	lis, err := net.Listen(grpcConfig.Transport(), grpcConfig.Address())
 	if err != nil {
-		log.Printf("failed to listen: %v", err)
-		return
+		log.Fatalf("failed to listen: %v", err)
 	}
 
 	pgConfig, err := env.NewPgConfig()
 	if err != nil {
-		log.Printf("failed to get pg config: %v", err)
-		return
+		log.Fatalf("failed to get pg config: %v", err)
 	}
 
 	// Create database connections pool.
 	pool, err := pgxpool.New(ctx, pgConfig.DSN())
 	if err != nil {
-		log.Printf("failed to connect to database: %v", err)
-		return
+		log.Fatalf("failed to connect to database: %v", err)
 	}
 	defer pool.Close()
 
@@ -231,7 +217,6 @@ func main() {
 	log.Printf("server listening at %v", lis.Addr())
 
 	if err = s.Serve(lis); err != nil {
-		log.Printf("failed to serve: %v", err)
-		return
+		log.Fatalf("failed to serve: %v", err)
 	}
 }
