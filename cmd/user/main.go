@@ -41,7 +41,7 @@ type server struct {
 func (s *server) Create(ctx context.Context, req *desc.CreateRequest) (*desc.CreateResponse, error) {
 	log.Printf("\n%s\nName: %s\nEmail: %s\nPassword: %s\nPassword confirm: %s\nRole: %v\n%s", delim, req.GetName(), req.GetEmail(), req.GetPassword(), req.GetPasswordConfirm(), req.GetRole(), delim)
 
-	// Hashing the password with the default cost of 10 TODO
+	// Hashing the password.
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.GetPassword()), bcryptCost)
 	if err != nil {
 		panic(err)

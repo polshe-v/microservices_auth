@@ -5,7 +5,7 @@ volumes:
 
 services:
   auth:
-    image: auth:1.0.0
+    image: auth:${APP_IMAGE_TAG}
     container_name: auth
     env_file:
       - ${ENV}.env
