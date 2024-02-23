@@ -11,7 +11,7 @@ To deploy Auth Service:
 ```
 # make docker-deploy ENV=<environment>
 ```
-*ENV is used then as a config name. Possible ENV values are now `stage` and `prod`.*
+*ENV is used then as a config name. Possible ENV values are now `stage` and `prod` as these configs are now in the repository.*
 
 To stop Auth Service:
 ```
