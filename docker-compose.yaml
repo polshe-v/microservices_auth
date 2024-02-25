@@ -1,0 +1,41 @@
+version: '3'
+
+volumes:
+  postgres_volume:
+
+services:
+  auth:
+    image: auth:${APP_IMAGE_TAG}
+    container_name: auth
+    env_file:
+      - ${ENV}.env
+    ports:
+      - "${GRPC_PORT}:${GRPC_PORT}"
+    depends_on:
+      db-auth:
+        condition: service_healthy
+      migrator-auth:
+        condition: service_completed_successfully
+  db-auth:
+    image: postgres:${POSTGRES_IMAGE_TAG}
+    container_name: db-auth
+    env_file:
+      - ${ENV}.env
+    ports:
+      - "${POSTGRES_PORT_LOCAL}:5432"
+    volumes:
+      - postgres_volume:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 1s
+      timeout: 5s
+      retries: 5
+  migrator-auth:
+    image: migrator-auth:${MIGRATOR_IMAGE_TAG}
+    container_name: migrator-auth
+    restart: on-failure
+    environment:
+      DB_HOST: db-auth
+    depends_on:
+      db-auth:
+        condition: service_healthy
