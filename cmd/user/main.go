@@ -41,10 +41,11 @@ type server struct {
 }
 
 func (s *server) Create(ctx context.Context, req *desc.CreateRequest) (*desc.CreateResponse, error) {
-	log.Printf("\n%s\nName: %s\nEmail: %s\nPassword: %s\nPassword confirm: %s\nRole: %v\n%s", delim, req.GetName(), req.GetEmail(), req.GetPassword(), req.GetPasswordConfirm(), req.GetRole(), delim)
+	user := req.GetUser()
+	log.Printf("\n%s\nName: %s\nEmail: %s\nPassword: %s\nPassword confirm: %s\nRole: %v\n%s", delim, user.GetName(), user.GetEmail(), user.GetPassword(), user.GetPasswordConfirm(), user.GetRole(), delim)
 
 	// Hashing the password.
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.GetPassword()), bcryptCost)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.GetPassword()), bcryptCost)
 	if err != nil {
 		log.Printf("%v", err)
 		return nil, errors.New("failed to process password")
@@ -53,7 +54,7 @@ func (s *server) Create(ctx context.Context, req *desc.CreateRequest) (*desc.Cre
 	builderInsert := sq.Insert("users").
 		PlaceholderFormat(sq.Dollar).
 		Columns("name", "role", "email", "password").
-		Values(req.GetName(), req.GetRole(), req.GetEmail(), hashedPassword).
+		Values(user.GetName(), user.GetRole(), user.GetEmail(), hashedPassword).
 		Suffix("RETURNING id")
 
 	query, args, err := builderInsert.ToSql()
@@ -110,27 +111,30 @@ func (s *server) Get(ctx context.Context, req *desc.GetRequest) (*desc.GetRespon
 	}
 
 	return &desc.GetResponse{
-		Id:        id,
-		Name:      name,
-		Email:     email,
-		Role:      desc.Role(desc.Role_value[role]),
-		CreatedAt: timestamppb.New(createdAt),
-		UpdatedAt: updatedAtTime,
+		User: &desc.User{
+			Id:        id,
+			Name:      name,
+			Email:     email,
+			Role:      desc.Role(desc.Role_value[role]),
+			CreatedAt: timestamppb.New(createdAt),
+			UpdatedAt: updatedAtTime,
+		},
 	}, nil
 }
 
 func (s *server) Update(ctx context.Context, req *desc.UpdateRequest) (*empty.Empty, error) {
-	log.Printf("\n%s\nID: %d\nName: %s\nEmail: %s\nRole: %v\n%s", delim, req.GetId(), req.GetName().GetValue(), req.GetEmail().GetValue(), req.GetRole(), delim)
+	user := req.GetUser()
+	log.Printf("\n%s\nID: %d\nName: %s\nEmail: %s\nRole: %v\n%s", delim, user.GetId(), user.GetName().GetValue(), user.GetEmail().GetValue(), user.GetRole(), delim)
 
 	builderUpdate := sq.Update("users").
 		SetMap(map[string]interface{}{
-			"name":       req.GetName().GetValue(),
-			"email":      req.GetEmail().GetValue(),
-			"role":       req.GetRole(),
+			"name":       user.GetName().GetValue(),
+			"email":      user.GetEmail().GetValue(),
+			"role":       user.GetRole(),
 			"updated_at": sq.Expr("NOW()"),
 		}).
 		PlaceholderFormat(sq.Dollar).
-		Where(sq.Eq{"id": req.GetId()})
+		Where(sq.Eq{"id": user.GetId()})
 
 	query, args, err := builderUpdate.ToSql()
 	if err != nil {
