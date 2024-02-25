@@ -2,29 +2,23 @@ package main
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"flag"
 	"log"
 	"net"
-	"time"
 
-	sq "github.com/Masterminds/squirrel"
 	"github.com/golang/protobuf/ptypes/empty"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	config "github.com/polshe-v/microservices_auth/internal/config"
 	env "github.com/polshe-v/microservices_auth/internal/config/env"
+	"github.com/polshe-v/microservices_auth/internal/repository"
+	"github.com/polshe-v/microservices_auth/internal/repository/user"
 	desc "github.com/polshe-v/microservices_auth/pkg/user_v1"
 )
 
 var configPath string
-var errQueryBuild = errors.New("failed to build query")
 
 func init() {
 	flag.StringVar(&configPath, "config", ".env", "Path to config file")
@@ -37,38 +31,19 @@ const (
 
 type server struct {
 	desc.UnimplementedUserV1Server
-	pool *pgxpool.Pool
+	userRepository repository.UserRepository
 }
 
 func (s *server) Create(ctx context.Context, req *desc.CreateRequest) (*desc.CreateResponse, error) {
 	user := req.GetUser()
 	log.Printf("\n%s\nName: %s\nEmail: %s\nPassword: %s\nPassword confirm: %s\nRole: %v\n%s", delim, user.GetName(), user.GetEmail(), user.GetPassword(), user.GetPasswordConfirm(), user.GetRole(), delim)
 
-	// Hashing the password.
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.GetPassword()), bcryptCost)
+	id, err := s.userRepository.Create(ctx, user)
 	if err != nil {
-		log.Printf("%v", err)
-		return nil, errors.New("failed to process password")
+		return nil, err
 	}
 
-	builderInsert := sq.Insert("users").
-		PlaceholderFormat(sq.Dollar).
-		Columns("name", "role", "email", "password").
-		Values(user.GetName(), user.GetRole(), user.GetEmail(), hashedPassword).
-		Suffix("RETURNING id")
-
-	query, args, err := builderInsert.ToSql()
-	if err != nil {
-		log.Printf("%v", err)
-		return nil, errQueryBuild
-	}
-
-	var id int64
-	err = s.pool.QueryRow(ctx, query, args...).Scan(&id)
-	if err != nil {
-		log.Printf("%v", err)
-		return nil, errors.New("failed to create user")
-	}
+	log.Printf("Created user with id: %d", id)
 
 	return &desc.CreateResponse{
 		Id: id,
@@ -78,47 +53,13 @@ func (s *server) Create(ctx context.Context, req *desc.CreateRequest) (*desc.Cre
 func (s *server) Get(ctx context.Context, req *desc.GetRequest) (*desc.GetResponse, error) {
 	log.Printf("\n%s\nID: %d\n%s", delim, req.GetId(), delim)
 
-	builderSelect := sq.Select("id", "name", "email", "role", "created_at", "updated_at").
-		From("users").
-		PlaceholderFormat(sq.Dollar).
-		Where(sq.Eq{"id": req.GetId()}).
-		Limit(1)
-
-	query, args, err := builderSelect.ToSql()
+	user, err := s.userRepository.Get(ctx, req.GetId())
 	if err != nil {
-		log.Printf("%v", err)
-		return nil, errQueryBuild
-	}
-
-	var id int64
-	var name, email, role string
-	var createdAt time.Time
-	var updatedAt sql.NullTime
-
-	err = s.pool.QueryRow(ctx, query, args...).Scan(&id, &name, &email, &role, &createdAt, &updatedAt)
-	if err != nil {
-		if err == pgx.ErrNoRows {
-			log.Printf("%v", err)
-			return nil, errors.New("no user with given id")
-		}
-		log.Printf("%v", err)
-		return nil, errors.New("failed to read user info")
-	}
-
-	var updatedAtTime *timestamppb.Timestamp
-	if updatedAt.Valid {
-		updatedAtTime = timestamppb.New(updatedAt.Time)
+		return nil, err
 	}
 
 	return &desc.GetResponse{
-		User: &desc.User{
-			Id:        id,
-			Name:      name,
-			Email:     email,
-			Role:      desc.Role(desc.Role_value[role]),
-			CreatedAt: timestamppb.New(createdAt),
-			UpdatedAt: updatedAtTime,
-		},
+		User: user,
 	}, nil
 }
 
@@ -126,28 +67,10 @@ func (s *server) Update(ctx context.Context, req *desc.UpdateRequest) (*empty.Em
 	user := req.GetUser()
 	log.Printf("\n%s\nID: %d\nName: %s\nEmail: %s\nRole: %v\n%s", delim, user.GetId(), user.GetName().GetValue(), user.GetEmail().GetValue(), user.GetRole(), delim)
 
-	builderUpdate := sq.Update("users").
-		SetMap(map[string]interface{}{
-			"name":       user.GetName().GetValue(),
-			"email":      user.GetEmail().GetValue(),
-			"role":       user.GetRole(),
-			"updated_at": sq.Expr("NOW()"),
-		}).
-		PlaceholderFormat(sq.Dollar).
-		Where(sq.Eq{"id": user.GetId()})
-
-	query, args, err := builderUpdate.ToSql()
+	err := s.userRepository.Update(ctx, user)
 	if err != nil {
-		log.Printf("%v", err)
-		return nil, errQueryBuild
+		return nil, err
 	}
-
-	res, err := s.pool.Exec(ctx, query, args...)
-	if err != nil {
-		log.Printf("%v", err)
-		return nil, errors.New("failed to update user info")
-	}
-	log.Printf("result: %v", res)
 
 	return &empty.Empty{}, nil
 }
@@ -155,22 +78,10 @@ func (s *server) Update(ctx context.Context, req *desc.UpdateRequest) (*empty.Em
 func (s *server) Delete(ctx context.Context, req *desc.DeleteRequest) (*empty.Empty, error) {
 	log.Printf("\n%s\nID: %d\n%s", delim, req.GetId(), delim)
 
-	builderDelete := sq.Delete("users").
-		PlaceholderFormat(sq.Dollar).
-		Where(sq.Eq{"id": req.GetId()})
-
-	query, args, err := builderDelete.ToSql()
+	err := s.userRepository.Delete(ctx, req.GetId())
 	if err != nil {
-		log.Printf("%v", err)
-		return nil, errQueryBuild
+		return nil, err
 	}
-
-	res, err := s.pool.Exec(ctx, query, args...)
-	if err != nil {
-		log.Printf("%v", err)
-		return nil, errors.New("failed to delete user")
-	}
-	log.Printf("result: %v", res)
 
 	return &empty.Empty{}, nil
 }
@@ -209,6 +120,9 @@ func main() {
 	}
 	defer pool.Close()
 
+	// Create repository layer.
+	userRepo := user.NewRepository(pool)
+
 	// Create gRPC *Server which has no service registered and has not started to accept requests yet.
 	s := grpc.NewServer()
 
@@ -216,7 +130,7 @@ func main() {
 	reflection.Register(s)
 
 	// Register service with corresponded interface.
-	desc.RegisterUserV1Server(s, &server{pool: pool})
+	desc.RegisterUserV1Server(s, &server{userRepository: userRepo})
 
 	log.Printf("server listening at %v", lis.Addr())
 
