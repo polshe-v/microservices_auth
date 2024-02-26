@@ -13,8 +13,10 @@ import (
 
 	config "github.com/polshe-v/microservices_auth/internal/config"
 	env "github.com/polshe-v/microservices_auth/internal/config/env"
-	"github.com/polshe-v/microservices_auth/internal/repository"
-	"github.com/polshe-v/microservices_auth/internal/repository/user"
+	"github.com/polshe-v/microservices_auth/internal/converter"
+	userRepository "github.com/polshe-v/microservices_auth/internal/repository/user"
+	"github.com/polshe-v/microservices_auth/internal/service"
+	userService "github.com/polshe-v/microservices_auth/internal/service/user"
 	desc "github.com/polshe-v/microservices_auth/pkg/user_v1"
 )
 
@@ -31,14 +33,14 @@ const (
 
 type server struct {
 	desc.UnimplementedUserV1Server
-	userRepository repository.UserRepository
+	userService service.UserService
 }
 
 func (s *server) Create(ctx context.Context, req *desc.CreateRequest) (*desc.CreateResponse, error) {
 	user := req.GetUser()
 	log.Printf("\n%s\nName: %s\nEmail: %s\nPassword: %s\nPassword confirm: %s\nRole: %v\n%s", delim, user.GetName(), user.GetEmail(), user.GetPassword(), user.GetPasswordConfirm(), user.GetRole(), delim)
 
-	id, err := s.userRepository.Create(ctx, user)
+	id, err := s.userService.Create(ctx, converter.ToUserCreateFromDesc(user))
 	if err != nil {
 		return nil, err
 	}
@@ -53,13 +55,13 @@ func (s *server) Create(ctx context.Context, req *desc.CreateRequest) (*desc.Cre
 func (s *server) Get(ctx context.Context, req *desc.GetRequest) (*desc.GetResponse, error) {
 	log.Printf("\n%s\nID: %d\n%s", delim, req.GetId(), delim)
 
-	user, err := s.userRepository.Get(ctx, req.GetId())
+	user, err := s.userService.Get(ctx, req.GetId())
 	if err != nil {
 		return nil, err
 	}
 
 	return &desc.GetResponse{
-		User: user,
+		User: converter.ToUserFromService(user),
 	}, nil
 }
 
@@ -67,7 +69,7 @@ func (s *server) Update(ctx context.Context, req *desc.UpdateRequest) (*empty.Em
 	user := req.GetUser()
 	log.Printf("\n%s\nID: %d\nName: %s\nEmail: %s\nRole: %v\n%s", delim, user.GetId(), user.GetName().GetValue(), user.GetEmail().GetValue(), user.GetRole(), delim)
 
-	err := s.userRepository.Update(ctx, user)
+	err := s.userService.Update(ctx, converter.ToUserUpdateFromDesc(user))
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +80,7 @@ func (s *server) Update(ctx context.Context, req *desc.UpdateRequest) (*empty.Em
 func (s *server) Delete(ctx context.Context, req *desc.DeleteRequest) (*empty.Empty, error) {
 	log.Printf("\n%s\nID: %d\n%s", delim, req.GetId(), delim)
 
-	err := s.userRepository.Delete(ctx, req.GetId())
+	err := s.userService.Delete(ctx, req.GetId())
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +123,8 @@ func main() {
 	defer pool.Close()
 
 	// Create repository layer.
-	userRepo := user.NewRepository(pool)
+	userRepo := userRepository.NewRepository(pool)
+	userSrv := userService.NewService(userRepo)
 
 	// Create gRPC *Server which has no service registered and has not started to accept requests yet.
 	s := grpc.NewServer()
@@ -130,7 +133,7 @@ func main() {
 	reflection.Register(s)
 
 	// Register service with corresponded interface.
-	desc.RegisterUserV1Server(s, &server{userRepository: userRepo})
+	desc.RegisterUserV1Server(s, &server{userService: userSrv})
 
 	log.Printf("server listening at %v", lis.Addr())
 

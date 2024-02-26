@@ -10,10 +10,10 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/crypto/bcrypt"
 
+	"github.com/polshe-v/microservices_auth/internal/model"
 	"github.com/polshe-v/microservices_auth/internal/repository"
 	"github.com/polshe-v/microservices_auth/internal/repository/user/converter"
-	"github.com/polshe-v/microservices_auth/internal/repository/user/model"
-	desc "github.com/polshe-v/microservices_auth/pkg/user_v1"
+	modelRepo "github.com/polshe-v/microservices_auth/internal/repository/user/model"
 )
 
 const (
@@ -41,9 +41,9 @@ func NewRepository(db *pgxpool.Pool) repository.UserRepository {
 	return &repo{db: db}
 }
 
-func (r *repo) Create(ctx context.Context, user *desc.UserCreate) (int64, error) {
+func (r *repo) Create(ctx context.Context, user *model.UserCreate) (int64, error) {
 	// Hashing the password.
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.GetPassword()), bcryptCost)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcryptCost)
 	if err != nil {
 		log.Printf("%v", err)
 		return 0, errors.New("failed to process password")
@@ -52,7 +52,7 @@ func (r *repo) Create(ctx context.Context, user *desc.UserCreate) (int64, error)
 	builderInsert := sq.Insert(tableName).
 		PlaceholderFormat(sq.Dollar).
 		Columns(nameColumn, roleColumn, emailColumn, passwordColumn).
-		Values(user.GetName(), user.GetRole(), user.GetEmail(), hashedPassword).
+		Values(user.Name, user.Role, user.Email, hashedPassword).
 		Suffix("RETURNING id")
 
 	query, args, err := builderInsert.ToSql()
@@ -71,7 +71,7 @@ func (r *repo) Create(ctx context.Context, user *desc.UserCreate) (int64, error)
 	return id, nil
 }
 
-func (r *repo) Get(ctx context.Context, id int64) (*desc.User, error) {
+func (r *repo) Get(ctx context.Context, id int64) (*model.User, error) {
 	builderSelect := sq.Select(idColumn, nameColumn, emailColumn, roleColumn, createdAtColumn, updatedAtColumn).
 		From(tableName).
 		PlaceholderFormat(sq.Dollar).
@@ -84,7 +84,7 @@ func (r *repo) Get(ctx context.Context, id int64) (*desc.User, error) {
 		return nil, errQueryBuild
 	}
 
-	var user model.User
+	var user modelRepo.User
 	err = r.db.QueryRow(ctx, query, args...).Scan(&user.ID, &user.Name, &user.Email, &user.Role, &user.CreatedAt, &user.UpdatedAt)
 	if err != nil {
 		if err == pgx.ErrNoRows {
@@ -98,16 +98,16 @@ func (r *repo) Get(ctx context.Context, id int64) (*desc.User, error) {
 	return converter.ToUserFromRepo(&user), nil
 }
 
-func (r *repo) Update(ctx context.Context, user *desc.UserUpdate) error {
+func (r *repo) Update(ctx context.Context, user *model.UserUpdate) error {
 	builderUpdate := sq.Update(tableName).
 		SetMap(map[string]interface{}{
-			nameColumn:      user.GetName().GetValue(),
-			emailColumn:     user.GetEmail().GetValue(),
-			roleColumn:      user.GetRole(),
+			nameColumn:      user.Name,
+			emailColumn:     user.Email,
+			roleColumn:      user.Role,
 			updatedAtColumn: sq.Expr("NOW()"),
 		}).
 		PlaceholderFormat(sq.Dollar).
-		Where(sq.Eq{idColumn: user.GetId()})
+		Where(sq.Eq{idColumn: user.ID})
 
 	query, args, err := builderUpdate.ToSql()
 	if err != nil {

@@ -1,4 +1,4 @@
-package repository
+package service
 
 import (
 	"context"
@@ -6,8 +6,8 @@ import (
 	"github.com/polshe-v/microservices_auth/internal/model"
 )
 
-// UserRepository is the interface for repository communication.
-type UserRepository interface {
+// UserService is the interface for service communication.
+type UserService interface {
 	Create(ctx context.Context, user *model.UserCreate) (int64, error)
 	Get(ctx context.Context, id int64) (*model.User, error)
 	Update(ctx context.Context, user *model.UserUpdate) error

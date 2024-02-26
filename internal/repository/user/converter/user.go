@@ -1,25 +1,18 @@
 package converter
 
 import (
-	"google.golang.org/protobuf/types/known/timestamppb"
-
-	"github.com/polshe-v/microservices_auth/internal/repository/user/model"
-	desc "github.com/polshe-v/microservices_auth/pkg/user_v1"
+	model "github.com/polshe-v/microservices_auth/internal/model"
+	modelRepo "github.com/polshe-v/microservices_auth/internal/repository/user/model"
 )
 
-// ToUserFromRepo convers model from repository layer to structure of service layer.
-func ToUserFromRepo(user *model.User) *desc.User {
-	var updatedAt *timestamppb.Timestamp
-	if user.UpdatedAt.Valid {
-		updatedAt = timestamppb.New(user.UpdatedAt.Time)
-	}
-
-	return &desc.User{
-		Id:        user.ID,
+// ToUserFromRepo converts repository layer model to structure of API layer.
+func ToUserFromRepo(user *modelRepo.User) *model.User {
+	return &model.User{
+		ID:        user.ID,
 		Name:      user.Name,
 		Email:     user.Email,
-		Role:      desc.Role(desc.Role_value[user.Role]),
-		CreatedAt: timestamppb.New(user.CreatedAt),
-		UpdatedAt: updatedAt,
+		Role:      user.Role,
+		CreatedAt: user.CreatedAt,
+		UpdatedAt: user.UpdatedAt,
 	}
 }
