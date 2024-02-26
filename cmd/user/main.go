@@ -6,16 +6,14 @@ import (
 	"log"
 	"net"
 
-	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
+	userAPI "github.com/polshe-v/microservices_auth/internal/api/user"
 	config "github.com/polshe-v/microservices_auth/internal/config"
 	env "github.com/polshe-v/microservices_auth/internal/config/env"
-	"github.com/polshe-v/microservices_auth/internal/converter"
 	userRepository "github.com/polshe-v/microservices_auth/internal/repository/user"
-	"github.com/polshe-v/microservices_auth/internal/service"
 	userService "github.com/polshe-v/microservices_auth/internal/service/user"
 	desc "github.com/polshe-v/microservices_auth/pkg/user_v1"
 )
@@ -24,68 +22,6 @@ var configPath string
 
 func init() {
 	flag.StringVar(&configPath, "config", ".env", "Path to config file")
-}
-
-const (
-	bcryptCost = 12
-	delim      = "---"
-)
-
-type server struct {
-	desc.UnimplementedUserV1Server
-	userService service.UserService
-}
-
-func (s *server) Create(ctx context.Context, req *desc.CreateRequest) (*desc.CreateResponse, error) {
-	user := req.GetUser()
-	log.Printf("\n%s\nName: %s\nEmail: %s\nPassword: %s\nPassword confirm: %s\nRole: %v\n%s", delim, user.GetName(), user.GetEmail(), user.GetPassword(), user.GetPasswordConfirm(), user.GetRole(), delim)
-
-	id, err := s.userService.Create(ctx, converter.ToUserCreateFromDesc(user))
-	if err != nil {
-		return nil, err
-	}
-
-	log.Printf("Created user with id: %d", id)
-
-	return &desc.CreateResponse{
-		Id: id,
-	}, nil
-}
-
-func (s *server) Get(ctx context.Context, req *desc.GetRequest) (*desc.GetResponse, error) {
-	log.Printf("\n%s\nID: %d\n%s", delim, req.GetId(), delim)
-
-	user, err := s.userService.Get(ctx, req.GetId())
-	if err != nil {
-		return nil, err
-	}
-
-	return &desc.GetResponse{
-		User: converter.ToUserFromService(user),
-	}, nil
-}
-
-func (s *server) Update(ctx context.Context, req *desc.UpdateRequest) (*empty.Empty, error) {
-	user := req.GetUser()
-	log.Printf("\n%s\nID: %d\nName: %s\nEmail: %s\nRole: %v\n%s", delim, user.GetId(), user.GetName().GetValue(), user.GetEmail().GetValue(), user.GetRole(), delim)
-
-	err := s.userService.Update(ctx, converter.ToUserUpdateFromDesc(user))
-	if err != nil {
-		return nil, err
-	}
-
-	return &empty.Empty{}, nil
-}
-
-func (s *server) Delete(ctx context.Context, req *desc.DeleteRequest) (*empty.Empty, error) {
-	log.Printf("\n%s\nID: %d\n%s", delim, req.GetId(), delim)
-
-	err := s.userService.Delete(ctx, req.GetId())
-	if err != nil {
-		return nil, err
-	}
-
-	return &empty.Empty{}, nil
 }
 
 func main() {
@@ -133,7 +69,7 @@ func main() {
 	reflection.Register(s)
 
 	// Register service with corresponded interface.
-	desc.RegisterUserV1Server(s, &server{userService: userSrv})
+	desc.RegisterUserV1Server(s, userAPI.NewImplementation(userSrv))
 
 	log.Printf("server listening at %v", lis.Addr())
 
