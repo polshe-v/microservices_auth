@@ -7,9 +7,9 @@ import (
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/crypto/bcrypt"
 
+	"github.com/polshe-v/microservices_auth/internal/client/db"
 	"github.com/polshe-v/microservices_auth/internal/model"
 	"github.com/polshe-v/microservices_auth/internal/repository"
 	"github.com/polshe-v/microservices_auth/internal/repository/user/converter"
@@ -33,11 +33,11 @@ const (
 var errQueryBuild = errors.New("failed to build query")
 
 type repo struct {
-	db *pgxpool.Pool
+	db db.Client
 }
 
 // NewRepository creates new object of repository layer.
-func NewRepository(db *pgxpool.Pool) repository.UserRepository {
+func NewRepository(db db.Client) repository.UserRepository {
 	return &repo{db: db}
 }
 
@@ -61,8 +61,13 @@ func (r *repo) Create(ctx context.Context, user *model.UserCreate) (int64, error
 		return 0, errQueryBuild
 	}
 
+	q := db.Query{
+		Name:     "user_repository.Create",
+		QueryRaw: query,
+	}
+
 	var id int64
-	err = r.db.QueryRow(ctx, query, args...).Scan(&id)
+	err = r.db.DB().QueryRowContext(ctx, q, args...).Scan(&id)
 	if err != nil {
 		log.Printf("%v", err)
 		return 0, errors.New("failed to create user")
@@ -84,8 +89,13 @@ func (r *repo) Get(ctx context.Context, id int64) (*model.User, error) {
 		return nil, errQueryBuild
 	}
 
+	q := db.Query{
+		Name:     "user_repository.Get",
+		QueryRaw: query,
+	}
+
 	var user modelRepo.User
-	err = r.db.QueryRow(ctx, query, args...).Scan(&user.ID, &user.Name, &user.Email, &user.Role, &user.CreatedAt, &user.UpdatedAt)
+	err = r.db.DB().ScanOneContext(ctx, &user, q, args...)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			log.Printf("%v", err)
@@ -115,7 +125,12 @@ func (r *repo) Update(ctx context.Context, user *model.UserUpdate) error {
 		return errQueryBuild
 	}
 
-	res, err := r.db.Exec(ctx, query, args...)
+	q := db.Query{
+		Name:     "user_repository.Update",
+		QueryRaw: query,
+	}
+
+	res, err := r.db.DB().ExecContext(ctx, q, args...)
 	if err != nil {
 		log.Printf("%v", err)
 		return errors.New("failed to update user info")
@@ -135,7 +150,12 @@ func (r *repo) Delete(ctx context.Context, id int64) error {
 		return errQueryBuild
 	}
 
-	res, err := r.db.Exec(ctx, query, args...)
+	q := db.Query{
+		Name:     "user_repository.Delete",
+		QueryRaw: query,
+	}
+
+	res, err := r.db.DB().ExecContext(ctx, q, args...)
 	if err != nil {
 		log.Printf("%v", err)
 		return errors.New("failed to delete user")

@@ -4,9 +4,9 @@ import (
 	"context"
 	"log"
 
-	"github.com/jackc/pgx/v5/pgxpool"
-
 	"github.com/polshe-v/microservices_auth/internal/api/user"
+	"github.com/polshe-v/microservices_auth/internal/client/db"
+	"github.com/polshe-v/microservices_auth/internal/client/db/pg"
 	"github.com/polshe-v/microservices_auth/internal/closer"
 	config "github.com/polshe-v/microservices_auth/internal/config"
 	"github.com/polshe-v/microservices_auth/internal/config/env"
@@ -20,7 +20,7 @@ type serviceProvider struct {
 	pgConfig   config.PgConfig
 	grpcConfig config.GrpcConfig
 
-	pgPool *pgxpool.Pool
+	dbClient db.Client
 
 	userRepository repository.UserRepository
 	userService    service.UserService
@@ -57,33 +57,29 @@ func (s *serviceProvider) GrpcConfig() config.GrpcConfig {
 	return s.grpcConfig
 }
 
-func (s *serviceProvider) PgPool(ctx context.Context) *pgxpool.Pool {
-	if s.pgPool == nil {
-		// Create database connections pool.
-		pool, err := pgxpool.New(ctx, s.PgConfig().DSN())
+func (s *serviceProvider) DBClient(ctx context.Context) db.Client {
+	if s.dbClient == nil {
+		c, err := pg.New(ctx, s.PgConfig().DSN())
 		if err != nil {
-			log.Fatalf("failed to connect to database: %v", err)
+			log.Fatalf("failed to create db client: %v", err)
 		}
 
-		err = pool.Ping(ctx)
+		err = c.DB().Ping(ctx)
 		if err != nil {
 			log.Fatalf("failed to ping database: %v", err)
 		}
 
-		closer.Add(func() error {
-			pool.Close()
-			return nil
-		})
+		closer.Add(c.Close)
 
-		s.pgPool = pool
+		s.dbClient = c
 	}
 
-	return s.pgPool
+	return s.dbClient
 }
 
 func (s *serviceProvider) UserRepository(ctx context.Context) repository.UserRepository {
 	if s.userRepository == nil {
-		s.userRepository = userRepository.NewRepository(s.PgPool(ctx))
+		s.userRepository = userRepository.NewRepository(s.DBClient(ctx))
 	}
 	return s.userRepository
 }
