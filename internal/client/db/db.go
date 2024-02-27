@@ -7,6 +7,9 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
+// Handler is a function executed in transaction.
+type Handler func(ctx context.Context) error
+
 // Client interface is a client for DB.
 type Client interface {
 	DB() DB
@@ -17,6 +20,16 @@ type Client interface {
 type Query struct {
 	Name     string
 	QueryRaw string
+}
+
+// Transactor interface is used for DB transactions.
+type Transactor interface {
+	BeginTx(ctx context.Context, txOptions pgx.TxOptions) (pgx.Tx, error)
+}
+
+// TxManager interface contains handler for transaction.
+type TxManager interface {
+	ReadCommitted(ctx context.Context, f Handler) error
 }
 
 // SQLExecutor interface gathers all DB query executors.
@@ -46,6 +59,7 @@ type Pinger interface {
 // DB interface for communication with DB.
 type DB interface {
 	SQLExecutor
+	Transactor
 	Pinger
 	Close()
 }

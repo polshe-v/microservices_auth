@@ -2,10 +2,10 @@ package pg
 
 import (
 	"context"
-	"errors"
 	"log"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/pkg/errors"
 
 	"github.com/polshe-v/microservices_auth/internal/client/db"
 )
@@ -20,7 +20,7 @@ func New(ctx context.Context, dsn string) (db.Client, error) {
 
 	if err != nil {
 		log.Printf("%v", err)
-		return nil, errors.New("failed to connect to db")
+		return nil, errors.Errorf("failed to connect to db: %v", err)
 	}
 
 	return &pgClient{
