@@ -108,7 +108,7 @@ func (r *repo) Get(ctx context.Context, id int64) (*model.User, error) {
 	return converter.ToUserFromRepo(&user), nil
 }
 
-func (r *repo) Update(ctx context.Context, user *model.UserUpdate) error {
+func (r *repo) Update(ctx context.Context, user *model.UserUpdate) (int64, error) {
 	builderUpdate := sq.Update(tableName).
 		SetMap(map[string]interface{}{
 			nameColumn:      user.Name,
@@ -122,7 +122,7 @@ func (r *repo) Update(ctx context.Context, user *model.UserUpdate) error {
 	query, args, err := builderUpdate.ToSql()
 	if err != nil {
 		log.Printf("%v", err)
-		return errQueryBuild
+		return 0, errQueryBuild
 	}
 
 	q := db.Query{
@@ -133,13 +133,13 @@ func (r *repo) Update(ctx context.Context, user *model.UserUpdate) error {
 	res, err := r.db.DB().ExecContext(ctx, q, args...)
 	if err != nil {
 		log.Printf("%v", err)
-		return errors.New("failed to update user info")
+		return 0, errors.New("failed to update user info")
 	}
-	log.Printf("Result: %v", res)
-	return nil
+
+	return res.RowsAffected(), nil
 }
 
-func (r *repo) Delete(ctx context.Context, id int64) error {
+func (r *repo) Delete(ctx context.Context, id int64) (int64, error) {
 	builderDelete := sq.Delete(tableName).
 		PlaceholderFormat(sq.Dollar).
 		Where(sq.Eq{idColumn: id})
@@ -147,7 +147,7 @@ func (r *repo) Delete(ctx context.Context, id int64) error {
 	query, args, err := builderDelete.ToSql()
 	if err != nil {
 		log.Printf("%v", err)
-		return errQueryBuild
+		return 0, errQueryBuild
 	}
 
 	q := db.Query{
@@ -158,8 +158,8 @@ func (r *repo) Delete(ctx context.Context, id int64) error {
 	res, err := r.db.DB().ExecContext(ctx, q, args...)
 	if err != nil {
 		log.Printf("%v", err)
-		return errors.New("failed to delete user")
+		return 0, errors.New("failed to delete user")
 	}
-	log.Printf("Result: %v", res)
-	return nil
+
+	return res.RowsAffected(), nil
 }

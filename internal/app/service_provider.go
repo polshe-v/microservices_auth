@@ -9,9 +9,10 @@ import (
 	"github.com/polshe-v/microservices_auth/internal/client/db/pg"
 	"github.com/polshe-v/microservices_auth/internal/client/db/transaction"
 	"github.com/polshe-v/microservices_auth/internal/closer"
-	config "github.com/polshe-v/microservices_auth/internal/config"
+	"github.com/polshe-v/microservices_auth/internal/config"
 	"github.com/polshe-v/microservices_auth/internal/config/env"
 	"github.com/polshe-v/microservices_auth/internal/repository"
+	logRepository "github.com/polshe-v/microservices_auth/internal/repository/log"
 	userRepository "github.com/polshe-v/microservices_auth/internal/repository/user"
 	"github.com/polshe-v/microservices_auth/internal/service"
 	userService "github.com/polshe-v/microservices_auth/internal/service/user"
@@ -25,6 +26,7 @@ type serviceProvider struct {
 	txManager db.TxManager
 
 	userRepository repository.UserRepository
+	logRepository  repository.LogRepository
 	userService    service.UserService
 	userImpl       *user.Implementation
 }
@@ -93,9 +95,16 @@ func (s *serviceProvider) UserRepository(ctx context.Context) repository.UserRep
 	return s.userRepository
 }
 
+func (s *serviceProvider) LogRepository(ctx context.Context) repository.LogRepository {
+	if s.logRepository == nil {
+		s.logRepository = logRepository.NewRepository(s.DBClient(ctx))
+	}
+	return s.logRepository
+}
+
 func (s *serviceProvider) UserService(ctx context.Context) service.UserService {
 	if s.userService == nil {
-		s.userService = userService.NewService(s.UserRepository(ctx), s.TxManager(ctx))
+		s.userService = userService.NewService(s.UserRepository(ctx), s.LogRepository(ctx), s.TxManager(ctx))
 	}
 	return s.userService
 }
