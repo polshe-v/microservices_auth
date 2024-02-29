@@ -2,7 +2,6 @@ package user
 
 import (
 	"context"
-	"log"
 
 	"github.com/golang/protobuf/ptypes/empty"
 
@@ -12,10 +11,7 @@ import (
 
 // Update is used for updating user info.
 func (i *Implementation) Update(ctx context.Context, req *desc.UpdateRequest) (*empty.Empty, error) {
-	user := req.GetUser()
-	log.Printf("\n%s\nID: %d\nName: %s\nEmail: %s\nRole: %v\n%s", delim, user.GetId(), user.GetName().GetValue(), user.GetEmail().GetValue(), user.GetRole(), delim)
-
-	err := i.userService.Update(ctx, converter.ToUserUpdateFromDesc(user))
+	err := i.userService.Update(ctx, converter.ToUserUpdateFromDesc(req.GetUser()))
 	if err != nil {
 		return nil, err
 	}

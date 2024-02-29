@@ -2,7 +2,9 @@ package user
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"log"
 
 	"github.com/polshe-v/microservices_auth/internal/model"
 )
@@ -17,7 +19,7 @@ func (s *serv) Get(ctx context.Context, id int64) (*model.User, error) {
 		}
 
 		errTx = s.logRepository.Log(ctx, &model.Log{
-			Log: fmt.Sprintf("Read info about user with id: %d", id),
+			Text: fmt.Sprintf("Read info about user with id: %d", id),
 		})
 		if errTx != nil {
 			return errTx
@@ -27,7 +29,8 @@ func (s *serv) Get(ctx context.Context, id int64) (*model.User, error) {
 	})
 
 	if err != nil {
-		return nil, err
+		log.Print(err)
+		return nil, errors.New("failed to read user info")
 	}
 	return user, nil
 }

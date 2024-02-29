@@ -2,12 +2,10 @@ package user
 
 import (
 	"context"
-	"errors"
-	"log"
+	"fmt"
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jackc/pgx/v5"
-	"golang.org/x/crypto/bcrypt"
 
 	"github.com/polshe-v/microservices_auth/internal/client/db"
 	"github.com/polshe-v/microservices_auth/internal/model"
@@ -26,11 +24,7 @@ const (
 	roleColumn      = "role"
 	createdAtColumn = "created_at"
 	updatedAtColumn = "updated_at"
-
-	bcryptCost = 12
 )
-
-var errQueryBuild = errors.New("failed to build query")
 
 type repo struct {
 	db db.Client
@@ -42,23 +36,15 @@ func NewRepository(db db.Client) repository.UserRepository {
 }
 
 func (r *repo) Create(ctx context.Context, user *model.UserCreate) (int64, error) {
-	// Hashing the password.
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcryptCost)
-	if err != nil {
-		log.Printf("%v", err)
-		return 0, errors.New("failed to process password")
-	}
-
 	builderInsert := sq.Insert(tableName).
 		PlaceholderFormat(sq.Dollar).
 		Columns(nameColumn, roleColumn, emailColumn, passwordColumn).
-		Values(user.Name, user.Role, user.Email, hashedPassword).
-		Suffix("RETURNING id")
+		Values(user.Name, user.Role, user.Email, user.Password).
+		Suffix(fmt.Sprintf("RETURNING %s", idColumn))
 
 	query, args, err := builderInsert.ToSql()
 	if err != nil {
-		log.Printf("%v", err)
-		return 0, errQueryBuild
+		return 0, err
 	}
 
 	q := db.Query{
@@ -69,8 +55,7 @@ func (r *repo) Create(ctx context.Context, user *model.UserCreate) (int64, error
 	var id int64
 	err = r.db.DB().QueryRowContext(ctx, q, args...).Scan(&id)
 	if err != nil {
-		log.Printf("%v", err)
-		return 0, errors.New("failed to create user")
+		return 0, err
 	}
 
 	return id, nil
@@ -85,8 +70,7 @@ func (r *repo) Get(ctx context.Context, id int64) (*model.User, error) {
 
 	query, args, err := builderSelect.ToSql()
 	if err != nil {
-		log.Printf("%v", err)
-		return nil, errQueryBuild
+		return nil, err
 	}
 
 	q := db.Query{
@@ -98,17 +82,15 @@ func (r *repo) Get(ctx context.Context, id int64) (*model.User, error) {
 	err = r.db.DB().ScanOneContext(ctx, &user, q, args...)
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			log.Printf("%v", err)
-			return nil, errors.New("no user with given id")
+			return nil, err
 		}
-		log.Printf("%v", err)
-		return nil, errors.New("failed to read user info")
+		return nil, err
 	}
 
 	return converter.ToUserFromRepo(&user), nil
 }
 
-func (r *repo) Update(ctx context.Context, user *model.UserUpdate) (int64, error) {
+func (r *repo) Update(ctx context.Context, user *model.UserUpdate) error {
 	builderUpdate := sq.Update(tableName).
 		SetMap(map[string]interface{}{
 			nameColumn:      user.Name,
@@ -121,8 +103,7 @@ func (r *repo) Update(ctx context.Context, user *model.UserUpdate) (int64, error
 
 	query, args, err := builderUpdate.ToSql()
 	if err != nil {
-		log.Printf("%v", err)
-		return 0, errQueryBuild
+		return err
 	}
 
 	q := db.Query{
@@ -130,24 +111,22 @@ func (r *repo) Update(ctx context.Context, user *model.UserUpdate) (int64, error
 		QueryRaw: query,
 	}
 
-	res, err := r.db.DB().ExecContext(ctx, q, args...)
+	_, err = r.db.DB().ExecContext(ctx, q, args...)
 	if err != nil {
-		log.Printf("%v", err)
-		return 0, errors.New("failed to update user info")
+		return err
 	}
 
-	return res.RowsAffected(), nil
+	return nil
 }
 
-func (r *repo) Delete(ctx context.Context, id int64) (int64, error) {
+func (r *repo) Delete(ctx context.Context, id int64) error {
 	builderDelete := sq.Delete(tableName).
 		PlaceholderFormat(sq.Dollar).
 		Where(sq.Eq{idColumn: id})
 
 	query, args, err := builderDelete.ToSql()
 	if err != nil {
-		log.Printf("%v", err)
-		return 0, errQueryBuild
+		return err
 	}
 
 	q := db.Query{
@@ -155,11 +134,10 @@ func (r *repo) Delete(ctx context.Context, id int64) (int64, error) {
 		QueryRaw: query,
 	}
 
-	res, err := r.db.DB().ExecContext(ctx, q, args...)
+	_, err = r.db.DB().ExecContext(ctx, q, args...)
 	if err != nil {
-		log.Printf("%v", err)
-		return 0, errors.New("failed to delete user")
+		return err
 	}
 
-	return res.RowsAffected(), nil
+	return nil
 }

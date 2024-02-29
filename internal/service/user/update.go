@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/polshe-v/microservices_auth/internal/model"
 )
@@ -11,16 +12,13 @@ import (
 func (s *serv) Update(ctx context.Context, user *model.UserUpdate) error {
 	err := s.txManager.ReadCommitted(ctx, func(ctx context.Context) error {
 		var errTx error
-		rowsNumber, errTx := s.userRepository.Update(ctx, user)
+		errTx = s.userRepository.Update(ctx, user)
 		if errTx != nil {
 			return errTx
 		}
-		if rowsNumber == 0 {
-			return errors.New("no user found to update")
-		}
 
 		errTx = s.logRepository.Log(ctx, &model.Log{
-			Log: fmt.Sprintf("Updated user with id: %d", user.ID),
+			Text: fmt.Sprintf("Updated user with id: %d", user.ID),
 		})
 		if errTx != nil {
 			return errTx
@@ -30,7 +28,8 @@ func (s *serv) Update(ctx context.Context, user *model.UserUpdate) error {
 	})
 
 	if err != nil {
-		return err
+		log.Print(err)
+		return errors.New("failed to update user info")
 	}
 	return nil
 }

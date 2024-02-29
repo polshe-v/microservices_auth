@@ -2,8 +2,7 @@ package user
 
 import (
 	"context"
-	"errors"
-	"log"
+	"fmt"
 
 	sq "github.com/Masterminds/squirrel"
 
@@ -20,8 +19,6 @@ const (
 	logColumn       = "log"
 )
 
-var errQueryBuild = errors.New("failed to build query")
-
 type repo struct {
 	db db.Client
 }
@@ -35,13 +32,12 @@ func (r *repo) Log(ctx context.Context, text *model.Log) error {
 	builderInsert := sq.Insert(tableName).
 		PlaceholderFormat(sq.Dollar).
 		Columns(logColumn).
-		Values(text.Log).
-		Suffix("RETURNING id")
+		Values(text.Text).
+		Suffix(fmt.Sprintf("RETURNING %s", idColumn))
 
 	query, args, err := builderInsert.ToSql()
 	if err != nil {
-		log.Printf("%v", err)
-		return errQueryBuild
+		return err
 	}
 
 	q := db.Query{
@@ -52,8 +48,7 @@ func (r *repo) Log(ctx context.Context, text *model.Log) error {
 	var id int64
 	err = r.db.DB().QueryRowContext(ctx, q, args...).Scan(&id)
 	if err != nil {
-		log.Printf("%v", err)
-		return errors.New("failed to create transaction log record")
+		return err
 	}
 
 	return nil

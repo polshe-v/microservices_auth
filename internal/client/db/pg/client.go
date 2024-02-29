@@ -2,7 +2,6 @@ package pg
 
 import (
 	"context"
-	"log"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/pkg/errors"
@@ -19,7 +18,6 @@ func New(ctx context.Context, dsn string) (db.Client, error) {
 	dbc, err := pgxpool.New(ctx, dsn)
 
 	if err != nil {
-		log.Printf("%v", err)
 		return nil, errors.Errorf("failed to connect to db: %v", err)
 	}
 

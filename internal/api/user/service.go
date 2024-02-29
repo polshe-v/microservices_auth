@@ -5,8 +5,6 @@ import (
 	desc "github.com/polshe-v/microservices_auth/pkg/user_v1"
 )
 
-const delim = "---"
-
 // Implementation structure describes API layer.
 type Implementation struct {
 	desc.UnimplementedUserV1Server

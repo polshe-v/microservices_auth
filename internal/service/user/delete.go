@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/polshe-v/microservices_auth/internal/model"
 )
@@ -11,16 +12,13 @@ import (
 func (s *serv) Delete(ctx context.Context, id int64) error {
 	err := s.txManager.ReadCommitted(ctx, func(ctx context.Context) error {
 		var errTx error
-		rowsNumber, errTx := s.userRepository.Delete(ctx, id)
+		errTx = s.userRepository.Delete(ctx, id)
 		if errTx != nil {
 			return errTx
 		}
-		if rowsNumber == 0 {
-			return errors.New("no user found to delete")
-		}
 
 		errTx = s.logRepository.Log(ctx, &model.Log{
-			Log: fmt.Sprintf("Deleted user with id: %d", id),
+			Text: fmt.Sprintf("Deleted user with id: %d", id),
 		})
 		if errTx != nil {
 			return errTx
@@ -30,7 +28,8 @@ func (s *serv) Delete(ctx context.Context, id int64) error {
 	})
 
 	if err != nil {
-		return err
+		log.Print(err)
+		return errors.New("failed to delete user")
 	}
 	return nil
 }
