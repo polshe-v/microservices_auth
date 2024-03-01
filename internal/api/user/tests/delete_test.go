@@ -9,7 +9,7 @@ import (
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/stretchr/testify/require"
 
-	"github.com/polshe-v/microservices_auth/internal/api/user"
+	userAPI "github.com/polshe-v/microservices_auth/internal/api/user"
 	"github.com/polshe-v/microservices_auth/internal/service"
 	serviceMocks "github.com/polshe-v/microservices_auth/internal/service/mocks"
 	desc "github.com/polshe-v/microservices_auth/pkg/user_v1"
@@ -46,7 +46,7 @@ func TestDelete(t *testing.T) {
 		userServiceMock userServiceMockFunc
 	}{
 		{
-			name: "service success case",
+			name: "success case",
 			args: args{
 				ctx: ctx,
 				req: req,
@@ -55,7 +55,7 @@ func TestDelete(t *testing.T) {
 			err:  nil,
 			userServiceMock: func(mc *minimock.Controller) service.UserService {
 				mock := serviceMocks.NewUserServiceMock(mc)
-				mock.DeleteMock.Expect(ctx, id).Return(nil)
+				mock.DeleteMock.Expect(minimock.AnyContext, id).Return(nil)
 				return mock
 			},
 		},
@@ -69,7 +69,7 @@ func TestDelete(t *testing.T) {
 			err:  serviceErr,
 			userServiceMock: func(mc *minimock.Controller) service.UserService {
 				mock := serviceMocks.NewUserServiceMock(mc)
-				mock.DeleteMock.Expect(ctx, id).Return(serviceErr)
+				mock.DeleteMock.Expect(minimock.AnyContext, id).Return(serviceErr)
 				return mock
 			},
 		},
@@ -79,7 +79,7 @@ func TestDelete(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			userServiceMock := tt.userServiceMock(mc)
-			api := user.NewImplementation(userServiceMock)
+			api := userAPI.NewImplementation(userServiceMock)
 
 			res, err := api.Delete(tt.args.ctx, tt.args.req)
 			require.Equal(t, tt.err, err)

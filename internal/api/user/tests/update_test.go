@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	"github.com/polshe-v/microservices_auth/internal/api/user"
+	userAPI "github.com/polshe-v/microservices_auth/internal/api/user"
 	"github.com/polshe-v/microservices_auth/internal/model"
 	"github.com/polshe-v/microservices_auth/internal/service"
 	serviceMocks "github.com/polshe-v/microservices_auth/internal/service/mocks"
@@ -63,7 +63,7 @@ func TestUpdate(t *testing.T) {
 		userServiceMock userServiceMockFunc
 	}{
 		{
-			name: "service success case",
+			name: "success case",
 			args: args{
 				ctx: ctx,
 				req: req,
@@ -72,7 +72,7 @@ func TestUpdate(t *testing.T) {
 			err:  nil,
 			userServiceMock: func(mc *minimock.Controller) service.UserService {
 				mock := serviceMocks.NewUserServiceMock(mc)
-				mock.UpdateMock.Expect(ctx, userUpdate).Return(nil)
+				mock.UpdateMock.Expect(minimock.AnyContext, userUpdate).Return(nil)
 				return mock
 			},
 		},
@@ -86,7 +86,7 @@ func TestUpdate(t *testing.T) {
 			err:  serviceErr,
 			userServiceMock: func(mc *minimock.Controller) service.UserService {
 				mock := serviceMocks.NewUserServiceMock(mc)
-				mock.UpdateMock.Expect(ctx, userUpdate).Return(serviceErr)
+				mock.UpdateMock.Expect(minimock.AnyContext, userUpdate).Return(serviceErr)
 				return mock
 			},
 		},
@@ -96,7 +96,7 @@ func TestUpdate(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			userServiceMock := tt.userServiceMock(mc)
-			api := user.NewImplementation(userServiceMock)
+			api := userAPI.NewImplementation(userServiceMock)
 
 			res, err := api.Update(tt.args.ctx, tt.args.req)
 			require.Equal(t, tt.err, err)

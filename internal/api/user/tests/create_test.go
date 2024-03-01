@@ -8,7 +8,7 @@ import (
 	"github.com/gojuno/minimock/v3"
 	"github.com/stretchr/testify/require"
 
-	"github.com/polshe-v/microservices_auth/internal/api/user"
+	userAPI "github.com/polshe-v/microservices_auth/internal/api/user"
 	"github.com/polshe-v/microservices_auth/internal/model"
 	"github.com/polshe-v/microservices_auth/internal/service"
 	serviceMocks "github.com/polshe-v/microservices_auth/internal/service/mocks"
@@ -67,7 +67,7 @@ func TestCreate(t *testing.T) {
 		userServiceMock userServiceMockFunc
 	}{
 		{
-			name: "service success case",
+			name: "success case",
 			args: args{
 				ctx: ctx,
 				req: req,
@@ -76,7 +76,7 @@ func TestCreate(t *testing.T) {
 			err:  nil,
 			userServiceMock: func(mc *minimock.Controller) service.UserService {
 				mock := serviceMocks.NewUserServiceMock(mc)
-				mock.CreateMock.Expect(ctx, userCreate).Return(id, nil)
+				mock.CreateMock.Expect(minimock.AnyContext, userCreate).Return(id, nil)
 				return mock
 			},
 		},
@@ -90,7 +90,7 @@ func TestCreate(t *testing.T) {
 			err:  serviceErr,
 			userServiceMock: func(mc *minimock.Controller) service.UserService {
 				mock := serviceMocks.NewUserServiceMock(mc)
-				mock.CreateMock.Expect(ctx, userCreate).Return(0, serviceErr)
+				mock.CreateMock.Expect(minimock.AnyContext, userCreate).Return(0, serviceErr)
 				return mock
 			},
 		},
@@ -100,7 +100,7 @@ func TestCreate(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			userServiceMock := tt.userServiceMock(mc)
-			api := user.NewImplementation(userServiceMock)
+			api := userAPI.NewImplementation(userServiceMock)
 
 			res, err := api.Create(tt.args.ctx, tt.args.req)
 			require.Equal(t, tt.err, err)

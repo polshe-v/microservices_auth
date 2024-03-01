@@ -2,8 +2,6 @@
 
 package mocks
 
-//go:generate minimock -i github.com/polshe-v/microservices_auth/internal/repository.UserRepository -o user_repository_minimock.go -n UserRepositoryMock -p mocks
-
 import (
 	"context"
 	"sync"

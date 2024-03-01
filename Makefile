@@ -41,9 +41,11 @@ generate-api-v1:
 generate-mocks:
 	go generate ./internal/repository
 	go generate ./internal/service
+	go generate ./internal/client/db
 
-unit-test-api:
+unit-test:
 	go test ./internal/api/user/tests -v
+	go test ./internal/service/user/tests -v
 
 check-env:
 ifeq ($(ENV),)
