@@ -40,11 +40,8 @@ func TestUpdate(t *testing.T) {
 		role  = "USER"
 
 		repositoryErr = fmt.Errorf("failed to update user info")
-		opts          = pgx.TxOptions{IsoLevel: pgx.ReadCommitted}
 
-		reqLog = &model.Log{
-			Text: fmt.Sprintf("Updated user with id: %d", id),
-		}
+		opts = pgx.TxOptions{IsoLevel: pgx.ReadCommitted}
 
 		req = &model.UserUpdate{
 			ID: id,
@@ -57,6 +54,10 @@ func TestUpdate(t *testing.T) {
 				Valid:  true,
 			},
 			Role: role,
+		}
+
+		reqLog = &model.Log{
+			Text: fmt.Sprintf("Updated user with id: %d", id),
 		}
 	)
 

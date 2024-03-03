@@ -41,6 +41,10 @@ func TestCreate(t *testing.T) {
 		passwordConfirm = "passwordConfirm"
 		role            = "USER"
 
+		repositoryErr = fmt.Errorf("failed to create user")
+
+		opts = pgx.TxOptions{IsoLevel: pgx.ReadCommitted}
+
 		req = &model.UserCreate{
 			Name:            name,
 			Email:           email,
@@ -52,10 +56,6 @@ func TestCreate(t *testing.T) {
 		reqLog = &model.Log{
 			Text: fmt.Sprintf("Created user with id: %d", id),
 		}
-
-		repositoryErr = fmt.Errorf("failed to create user")
-
-		opts = pgx.TxOptions{IsoLevel: pgx.ReadCommitted}
 	)
 
 	tests := []struct {

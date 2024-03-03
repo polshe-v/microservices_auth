@@ -42,9 +42,6 @@ func TestGet(t *testing.T) {
 		createdAt = timestamppb.Now()
 		updatedAt = timestamppb.Now()
 
-		repositoryErr = fmt.Errorf("failed to read user info")
-		opts          = pgx.TxOptions{IsoLevel: pgx.ReadCommitted}
-
 		reqLog = &model.Log{
 			Text: fmt.Sprintf("Read info about user with id: %d", id),
 		}
@@ -60,6 +57,10 @@ func TestGet(t *testing.T) {
 				Valid: true,
 			},
 		}
+
+		repositoryErr = fmt.Errorf("failed to read user info")
+
+		opts = pgx.TxOptions{IsoLevel: pgx.ReadCommitted}
 	)
 
 	tests := []struct {

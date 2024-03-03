@@ -37,10 +37,11 @@ func TestDelete(t *testing.T) {
 
 		repositoryErr = fmt.Errorf("failed to delete user")
 
+		opts = pgx.TxOptions{IsoLevel: pgx.ReadCommitted}
+
 		reqLog = &model.Log{
 			Text: fmt.Sprintf("Deleted user with id: %d", id),
 		}
-		opts = pgx.TxOptions{IsoLevel: pgx.ReadCommitted}
 	)
 
 	tests := []struct {
