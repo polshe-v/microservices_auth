@@ -3,6 +3,7 @@ package user
 import (
 	"context"
 	"fmt"
+	"log"
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jackc/pgx/v5"
@@ -93,13 +94,19 @@ func (r *repo) Get(ctx context.Context, id int64) (*model.User, error) {
 func (r *repo) Update(ctx context.Context, user *model.UserUpdate) error {
 	builderUpdate := sq.Update(tableName).
 		SetMap(map[string]interface{}{
-			nameColumn:      user.Name,
-			emailColumn:     user.Email,
 			roleColumn:      user.Role,
 			updatedAtColumn: sq.Expr("NOW()"),
 		}).
 		PlaceholderFormat(sq.Dollar).
 		Where(sq.Eq{idColumn: user.ID})
+
+	if user.Name.Valid {
+		builderUpdate = builderUpdate.Set(nameColumn, user.Name.String)
+	}
+
+	if user.Email.Valid {
+		builderUpdate = builderUpdate.Set(emailColumn, user.Email.String)
+	}
 
 	query, args, err := builderUpdate.ToSql()
 	if err != nil {

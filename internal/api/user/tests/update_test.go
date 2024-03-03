@@ -2,6 +2,7 @@ package tests
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"testing"
 
@@ -46,10 +47,16 @@ func TestUpdate(t *testing.T) {
 		}
 
 		userUpdate = &model.UserUpdate{
-			ID:    id,
-			Name:  name,
-			Email: email,
-			Role:  desc.Role_name[int32(role)],
+			ID: id,
+			Name: sql.NullString{
+				String: name,
+				Valid:  true,
+			},
+			Email: sql.NullString{
+				String: email,
+				Valid:  true,
+			},
+			Role: desc.Role_name[int32(role)],
 		}
 
 		res = &empty.Empty{}

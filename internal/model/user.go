@@ -27,7 +27,7 @@ type UserCreate struct {
 // UserUpdate type is the structure for updating user info.
 type UserUpdate struct {
 	ID    int64
-	Name  string
-	Email string
+	Name  sql.NullString
+	Email sql.NullString
 	Role  string
 }
