@@ -11,13 +11,13 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/polshe-v/microservices_auth/internal/client/db"
-	dbMocks "github.com/polshe-v/microservices_auth/internal/client/db/mocks"
-	"github.com/polshe-v/microservices_auth/internal/client/db/transaction"
 	"github.com/polshe-v/microservices_auth/internal/model"
 	"github.com/polshe-v/microservices_auth/internal/repository"
 	repositoryMocks "github.com/polshe-v/microservices_auth/internal/repository/mocks"
 	userService "github.com/polshe-v/microservices_auth/internal/service/user"
+	"github.com/polshe-v/microservices_common/pkg/db"
+	dbMocks "github.com/polshe-v/microservices_common/pkg/db/mocks"
+	"github.com/polshe-v/microservices_common/pkg/db/transaction"
 )
 
 func TestGet(t *testing.T) {
@@ -42,6 +42,10 @@ func TestGet(t *testing.T) {
 		createdAt = timestamppb.Now()
 		updatedAt = timestamppb.Now()
 
+		repositoryErr = fmt.Errorf("failed to read user info")
+
+		opts = pgx.TxOptions{IsoLevel: pgx.ReadCommitted}
+
 		reqLog = &model.Log{
 			Text: fmt.Sprintf("Read info about user with id: %d", id),
 		}
@@ -57,10 +61,6 @@ func TestGet(t *testing.T) {
 				Valid: true,
 			},
 		}
-
-		repositoryErr = fmt.Errorf("failed to read user info")
-
-		opts = pgx.TxOptions{IsoLevel: pgx.ReadCommitted}
 	)
 
 	tests := []struct {

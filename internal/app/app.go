@@ -9,9 +9,9 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
-	"github.com/polshe-v/microservices_auth/internal/closer"
 	"github.com/polshe-v/microservices_auth/internal/config"
 	desc "github.com/polshe-v/microservices_auth/pkg/user_v1"
+	"github.com/polshe-v/microservices_common/pkg/closer"
 )
 
 // App structure contains main application structures.

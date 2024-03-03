@@ -7,11 +7,11 @@ import (
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jackc/pgx/v5"
 
-	"github.com/polshe-v/microservices_auth/internal/client/db"
 	"github.com/polshe-v/microservices_auth/internal/model"
 	"github.com/polshe-v/microservices_auth/internal/repository"
 	"github.com/polshe-v/microservices_auth/internal/repository/user/converter"
 	modelRepo "github.com/polshe-v/microservices_auth/internal/repository/user/model"
+	"github.com/polshe-v/microservices_common/pkg/db"
 )
 
 const (

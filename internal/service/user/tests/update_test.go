@@ -10,13 +10,13 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/require"
 
-	"github.com/polshe-v/microservices_auth/internal/client/db"
-	dbMocks "github.com/polshe-v/microservices_auth/internal/client/db/mocks"
-	"github.com/polshe-v/microservices_auth/internal/client/db/transaction"
 	"github.com/polshe-v/microservices_auth/internal/model"
 	"github.com/polshe-v/microservices_auth/internal/repository"
 	repositoryMocks "github.com/polshe-v/microservices_auth/internal/repository/mocks"
 	userService "github.com/polshe-v/microservices_auth/internal/service/user"
+	"github.com/polshe-v/microservices_common/pkg/db"
+	dbMocks "github.com/polshe-v/microservices_common/pkg/db/mocks"
+	"github.com/polshe-v/microservices_common/pkg/db/transaction"
 )
 
 func TestUpdate(t *testing.T) {

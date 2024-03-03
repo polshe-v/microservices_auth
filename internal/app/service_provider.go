@@ -5,10 +5,6 @@ import (
 	"log"
 
 	"github.com/polshe-v/microservices_auth/internal/api/user"
-	"github.com/polshe-v/microservices_auth/internal/client/db"
-	"github.com/polshe-v/microservices_auth/internal/client/db/pg"
-	"github.com/polshe-v/microservices_auth/internal/client/db/transaction"
-	"github.com/polshe-v/microservices_auth/internal/closer"
 	"github.com/polshe-v/microservices_auth/internal/config"
 	"github.com/polshe-v/microservices_auth/internal/config/env"
 	"github.com/polshe-v/microservices_auth/internal/repository"
@@ -16,6 +12,10 @@ import (
 	userRepository "github.com/polshe-v/microservices_auth/internal/repository/user"
 	"github.com/polshe-v/microservices_auth/internal/service"
 	userService "github.com/polshe-v/microservices_auth/internal/service/user"
+	"github.com/polshe-v/microservices_common/pkg/closer"
+	"github.com/polshe-v/microservices_common/pkg/db"
+	"github.com/polshe-v/microservices_common/pkg/db/pg"
+	"github.com/polshe-v/microservices_common/pkg/db/transaction"
 )
 
 type serviceProvider struct {
