@@ -44,7 +44,6 @@ generate-api-v1:
 generate-mocks:
 	go generate ./internal/repository
 	go generate ./internal/service
-	go generate ./internal/client/db
 
 test:
 	go clean -testcache
