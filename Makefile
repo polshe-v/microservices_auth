@@ -7,6 +7,9 @@ BINARY_NAME=main
 CONFIG=$(ENV).env
 LOCAL_MIGRATION_DIR=$(MIGRATION_DIR)
 LOCAL_MIGRATION_DSN="host=localhost port=$(POSTGRES_PORT_LOCAL) dbname=$(POSTGRES_DB) user=$(POSTGRES_USER) password=$(POSTGRES_PASSWORD) sslmode=disable"
+TESTS_PATH=github.com/polshe-v/microservices_auth/internal/service/...,github.com/polshe-v/microservices_auth/internal/api/...
+TESTS_ATTEMPTS=5
+TESTS_COVERAGE_FILE=coverage.out
 
 # #################### #
 # DEPENDENCIES & TOOLS #
@@ -43,9 +46,17 @@ generate-mocks:
 	go generate ./internal/service
 	go generate ./internal/client/db
 
-unit-test:
-	go test ./internal/api/user/tests -v
-	go test ./internal/service/user/tests -v
+test:
+	go clean -testcache
+	-go test ./... -v -covermode count -coverpkg=$(TESTS_PATH) -count $(TESTS_ATTEMPTS)
+
+test-coverage:
+	go clean -testcache
+	-go test ./... -v -coverprofile=$(TESTS_COVERAGE_FILE).tmp -covermode count -coverpkg=$(TESTS_PATH) -count $(TESTS_ATTEMPTS)
+	grep -v "mocks/" $(TESTS_COVERAGE_FILE).tmp > $(TESTS_COVERAGE_FILE)
+	rm $(TESTS_COVERAGE_FILE).tmp
+	go tool cover -html=$(TESTS_COVERAGE_FILE) -o coverage.html
+	go tool cover -func=$(TESTS_COVERAGE_FILE) | grep "total"
 
 check-env:
 ifeq ($(ENV),)

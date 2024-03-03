@@ -3,7 +3,6 @@ package user
 import (
 	"context"
 	"fmt"
-	"log"
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jackc/pgx/v5"

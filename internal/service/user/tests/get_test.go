@@ -21,6 +21,7 @@ import (
 )
 
 func TestGet(t *testing.T) {
+	t.Parallel()
 	type userRepositoryMockFunc func(mc *minimock.Controller) repository.UserRepository
 	type logRepositoryMockFunc func(mc *minimock.Controller) repository.LogRepository
 	type transactorMockFunc func(mc *minimock.Controller) db.Transactor
@@ -97,7 +98,7 @@ func TestGet(t *testing.T) {
 			},
 		},
 		{
-			name: "repository error case",
+			name: "user repository error case",
 			args: args{
 				ctx: ctx,
 				req: id,
@@ -121,11 +122,39 @@ func TestGet(t *testing.T) {
 				return mock
 			},
 		},
+		{
+			name: "log repository error case",
+			args: args{
+				ctx: ctx,
+				req: id,
+			},
+			want: nil,
+			err:  repositoryErr,
+			userRepositoryMock: func(mc *minimock.Controller) repository.UserRepository {
+				mock := repositoryMocks.NewUserRepositoryMock(mc)
+				mock.GetMock.Expect(minimock.AnyContext, id).Return(res, nil)
+				return mock
+			},
+			logRepositoryMock: func(mc *minimock.Controller) repository.LogRepository {
+				mock := repositoryMocks.NewLogRepositoryMock(mc)
+				mock.LogMock.Expect(minimock.AnyContext, reqLog).Return(repositoryErr)
+				return mock
+			},
+			transactorMock: func(mc *minimock.Controller) db.Transactor {
+				mock := dbMocks.NewTransactorMock(mc)
+				txMock := dbMocks.NewTxMock(mc)
+				mock.BeginTxMock.Expect(minimock.AnyContext, opts).Return(txMock, nil)
+				txMock.RollbackMock.Expect(minimock.AnyContext).Return(nil)
+				return mock
+			},
+		},
 	}
 
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			userRepositoryMock := tt.userRepositoryMock(mc)
 			logRepositoryMock := tt.logRepositoryMock(mc)
 			txManagerMock := transaction.NewTransactionManager(tt.transactorMock(mc))

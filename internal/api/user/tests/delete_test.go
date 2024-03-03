@@ -16,6 +16,8 @@ import (
 )
 
 func TestDelete(t *testing.T) {
+	t.Parallel()
+
 	type userServiceMockFunc func(mc *minimock.Controller) service.UserService
 
 	type args struct {
@@ -78,6 +80,8 @@ func TestDelete(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			userServiceMock := tt.userServiceMock(mc)
 			api := userAPI.NewImplementation(userServiceMock)
 

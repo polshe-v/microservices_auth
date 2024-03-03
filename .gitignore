@@ -22,3 +22,6 @@ go.work
 
 # Directory with binary files
 /bin/
+
+# Tests coverage
+coverage.*
