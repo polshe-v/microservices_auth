@@ -35,7 +35,7 @@ func TestGet(t *testing.T) {
 		name      = "name"
 		email     = "email"
 		role      = desc.Role_USER
-		role_name = "USER"
+		roleName  = "USER"
 		createdAt = timestamppb.Now()
 		updatedAt = timestamppb.Now()
 
@@ -49,7 +49,7 @@ func TestGet(t *testing.T) {
 			ID:        id,
 			Name:      name,
 			Email:     email,
-			Role:      role_name,
+			Role:      roleName,
 			CreatedAt: createdAt.AsTime(),
 			UpdatedAt: sql.NullTime{
 				Time:  updatedAt.AsTime(),

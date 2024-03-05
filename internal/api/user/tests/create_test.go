@@ -35,7 +35,7 @@ func TestCreate(t *testing.T) {
 		password        = "password"
 		passwordConfirm = "passwordConfirm"
 		role            = desc.Role_USER
-		role_name       = "USER"
+		roleName        = "USER"
 
 		serviceErr = fmt.Errorf("service error")
 
@@ -54,7 +54,7 @@ func TestCreate(t *testing.T) {
 			Email:           email,
 			Password:        password,
 			PasswordConfirm: passwordConfirm,
-			Role:            role_name,
+			Role:            roleName,
 		}
 
 		res = &desc.CreateResponse{
