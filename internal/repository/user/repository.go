@@ -92,10 +92,7 @@ func (r *repo) Get(ctx context.Context, id int64) (*model.User, error) {
 
 func (r *repo) Update(ctx context.Context, user *model.UserUpdate) error {
 	builderUpdate := sq.Update(tableName).
-		SetMap(map[string]interface{}{
-			roleColumn:      user.Role,
-			updatedAtColumn: sq.Expr("NOW()"),
-		}).
+		Set(updatedAtColumn, sq.Expr("NOW()")).
 		PlaceholderFormat(sq.Dollar).
 		Where(sq.Eq{idColumn: user.ID})
 
@@ -105,6 +102,10 @@ func (r *repo) Update(ctx context.Context, user *model.UserUpdate) error {
 
 	if user.Email.Valid {
 		builderUpdate = builderUpdate.Set(emailColumn, user.Email.String)
+	}
+
+	if user.Role.Valid {
+		builderUpdate = builderUpdate.Set(roleColumn, user.Role.String)
 	}
 
 	query, args, err := builderUpdate.ToSql()
