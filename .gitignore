@@ -25,3 +25,6 @@ go.work
 
 # Tests coverage
 coverage.*
+
+# Directory with vendor proto declarations
+/vendor.protogen/

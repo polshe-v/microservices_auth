@@ -30,9 +30,13 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type UserV1Client interface {
+	// Create is used for creating new user.
 	Create(ctx context.Context, in *CreateRequest, opts ...grpc.CallOption) (*CreateResponse, error)
+	// Get is used to obtain user info.
 	Get(ctx context.Context, in *GetRequest, opts ...grpc.CallOption) (*GetResponse, error)
+	// Update is used for updating user info.
 	Update(ctx context.Context, in *UpdateRequest, opts ...grpc.CallOption) (*empty.Empty, error)
+	// Delete is used for deleting user.
 	Delete(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*empty.Empty, error)
 }
 
@@ -84,9 +88,13 @@ func (c *userV1Client) Delete(ctx context.Context, in *DeleteRequest, opts ...gr
 // All implementations must embed UnimplementedUserV1Server
 // for forward compatibility
 type UserV1Server interface {
+	// Create is used for creating new user.
 	Create(context.Context, *CreateRequest) (*CreateResponse, error)
+	// Get is used to obtain user info.
 	Get(context.Context, *GetRequest) (*GetResponse, error)
+	// Update is used for updating user info.
 	Update(context.Context, *UpdateRequest) (*empty.Empty, error)
+	// Delete is used for deleting user.
 	Delete(context.Context, *DeleteRequest) (*empty.Empty, error)
 	mustEmbedUnimplementedUserV1Server()
 }
