@@ -7,11 +7,11 @@ import (
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jackc/pgx/v5"
 
-	"github.com/polshe-v/microservices_auth/internal/client/db"
 	"github.com/polshe-v/microservices_auth/internal/model"
 	"github.com/polshe-v/microservices_auth/internal/repository"
 	"github.com/polshe-v/microservices_auth/internal/repository/user/converter"
 	modelRepo "github.com/polshe-v/microservices_auth/internal/repository/user/model"
+	"github.com/polshe-v/microservices_common/pkg/db"
 )
 
 const (
@@ -93,13 +93,19 @@ func (r *repo) Get(ctx context.Context, id int64) (*model.User, error) {
 func (r *repo) Update(ctx context.Context, user *model.UserUpdate) error {
 	builderUpdate := sq.Update(tableName).
 		SetMap(map[string]interface{}{
-			nameColumn:      user.Name,
-			emailColumn:     user.Email,
 			roleColumn:      user.Role,
 			updatedAtColumn: sq.Expr("NOW()"),
 		}).
 		PlaceholderFormat(sq.Dollar).
 		Where(sq.Eq{idColumn: user.ID})
+
+	if user.Name.Valid {
+		builderUpdate = builderUpdate.Set(nameColumn, user.Name.String)
+	}
+
+	if user.Email.Valid {
+		builderUpdate = builderUpdate.Set(emailColumn, user.Email.String)
+	}
 
 	query, args, err := builderUpdate.ToSql()
 	if err != nil {

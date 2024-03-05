@@ -7,6 +7,9 @@ BINARY_NAME=main
 CONFIG=$(ENV).env
 LOCAL_MIGRATION_DIR=$(MIGRATION_DIR)
 LOCAL_MIGRATION_DSN="host=localhost port=$(POSTGRES_PORT_LOCAL) dbname=$(POSTGRES_DB) user=$(POSTGRES_USER) password=$(POSTGRES_PASSWORD) sslmode=disable"
+TESTS_PATH=github.com/polshe-v/microservices_auth/internal/service/...,github.com/polshe-v/microservices_auth/internal/api/...
+TESTS_ATTEMPTS=5
+TESTS_COVERAGE_FILE=coverage.out
 
 # #################### #
 # DEPENDENCIES & TOOLS #
@@ -17,6 +20,7 @@ install-deps:
 	GOBIN=$(LOCAL_BIN) go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.32.0
 	GOBIN=$(LOCAL_BIN) go install -mod=mod google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.3.0
 	GOBIN=$(LOCAL_BIN) go install github.com/pressly/goose/v3/cmd/goose@v3.18.0
+	GOBIN=$(LOCAL_BIN) go install github.com/gojuno/minimock/v3/cmd/minimock@v3.3.6
 
 get-protoc-deps:
 	go get -u google.golang.org/protobuf/cmd/protoc-gen-go
@@ -36,6 +40,22 @@ generate-api-v1:
 	--go-grpc_out=pkg/user_v1 --go-grpc_opt=paths=source_relative \
 	--plugin=protoc-gen-go-grpc=$(LOCAL_BIN)/protoc-gen-go-grpc \
 	api/user_v1/user.proto
+
+generate-mocks:
+	go generate ./internal/repository
+	go generate ./internal/service
+
+test:
+	go clean -testcache
+	-go test ./... -v -covermode count -coverpkg=$(TESTS_PATH) -count $(TESTS_ATTEMPTS)
+
+test-coverage:
+	go clean -testcache
+	-go test ./... -v -coverprofile=$(TESTS_COVERAGE_FILE).tmp -covermode count -coverpkg=$(TESTS_PATH) -count $(TESTS_ATTEMPTS)
+	grep -v "mocks/" $(TESTS_COVERAGE_FILE).tmp > $(TESTS_COVERAGE_FILE)
+	rm $(TESTS_COVERAGE_FILE).tmp
+	go tool cover -html=$(TESTS_COVERAGE_FILE) -o coverage.html
+	go tool cover -func=$(TESTS_COVERAGE_FILE) | grep "total"
 
 check-env:
 ifeq ($(ENV),)

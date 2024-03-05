@@ -26,23 +26,6 @@ func ToUserFromService(user *model.User) *desc.User {
 	}
 }
 
-// ToUserFromDesc converts structure of API layer to service layer model.
-func ToUserFromDesc(user *desc.User) *model.User {
-	updatedAt := sql.NullTime{
-		Time:  user.UpdatedAt.AsTime(),
-		Valid: true,
-	}
-
-	return &model.User{
-		ID:        user.Id,
-		Name:      user.Name,
-		Email:     user.Email,
-		Role:      desc.Role_name[int32(user.Role)],
-		CreatedAt: user.CreatedAt.AsTime(),
-		UpdatedAt: updatedAt,
-	}
-}
-
 // ToUserCreateFromDesc converts structure of API layer to service layer model.
 func ToUserCreateFromDesc(user *desc.UserCreate) *model.UserCreate {
 	return &model.UserCreate{
@@ -56,10 +39,27 @@ func ToUserCreateFromDesc(user *desc.UserCreate) *model.UserCreate {
 
 // ToUserUpdateFromDesc converts structure of API layer to service layer model.
 func ToUserUpdateFromDesc(user *desc.UserUpdate) *model.UserUpdate {
+	var (
+		name  sql.NullString
+		email sql.NullString
+	)
+	if user.Name != nil {
+		name = sql.NullString{
+			String: user.Name.GetValue(),
+			Valid:  true,
+		}
+	}
+	if user.Email != nil {
+		email = sql.NullString{
+			String: user.Email.GetValue(),
+			Valid:  true,
+		}
+	}
+
 	return &model.UserUpdate{
 		ID:    user.Id,
-		Name:  user.Name.GetValue(),
-		Email: user.Email.GetValue(),
+		Name:  name,
+		Email: email,
 		Role:  desc.Role_name[int32(user.Role)],
 	}
 }
