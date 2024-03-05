@@ -10,9 +10,9 @@ services:
     env_file:
       - ${ENV}.env
     ports:
-      - "${GRPC_PORT}:${GRPC_PORT}"
-      - "${HTTP_PORT}:${HTTP_PORT}"
-      - "${SWAGGER_PORT}:${SWAGGER_PORT}"
+      - "127.0.0.1:${GRPC_PORT}:${GRPC_PORT}"
+      - "127.0.0.1:${HTTP_PORT}:${HTTP_PORT}"
+      - "127.0.0.1:${SWAGGER_PORT}:${SWAGGER_PORT}"
     depends_on:
       db-auth:
         condition: service_healthy

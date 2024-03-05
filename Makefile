@@ -53,8 +53,8 @@ generate-api-v1: check-env
 	--openapiv2_out=allow_merge=true,merge_file_name=api:pkg/swagger \
 	--plugin=protoc-gen-openapiv2=bin/protoc-gen-openapiv2 \
 	api/user_v1/user.proto
-	#sed -i -e 's/{SWAGGER_HOST}/localhost/g' pkg/swagger/api.swagger.json
-	#sed -i -e 's/{SWAGGER_PORT}/$(SWAGGER_PORT)/g' pkg/swagger/api.swagger.json
+	sed -i -e 's/{HTTP_HOST}/$(HTTP_HOST)/g' pkg/swagger/api.swagger.json
+	sed -i -e 's/{HTTP_PORT}/$(HTTP_PORT)/g' pkg/swagger/api.swagger.json
 
 vendor-proto:
 		@if [ ! -d vendor.protogen/validate ]; then \
