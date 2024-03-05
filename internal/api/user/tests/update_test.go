@@ -59,7 +59,10 @@ func TestUpdate(t *testing.T) {
 				String: email,
 				Valid:  true,
 			},
-			Role: role_name,
+			Role: sql.NullString{
+				String: role_name,
+				Valid:  true,
+			},
 		}
 
 		res = &empty.Empty{}
