@@ -31,7 +31,7 @@ service UserV1 {
 	// Create is used for creating new user.
 	rpc Create(CreateRequest) returns (CreateResponse){
 		option (google.api.http) = {
-			post: "/user/v1/create"
+			post: "/user/v1"
 			body: "*"
     	};
 	}

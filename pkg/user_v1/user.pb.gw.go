@@ -169,7 +169,7 @@ func RegisterUserV1HandlerServer(ctx context.Context, mux *runtime.ServeMux, ser
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/user_v1.UserV1/Create", runtime.WithHTTPPathPattern("/user/v1/create"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/user_v1.UserV1/Create", runtime.WithHTTPPathPattern("/user/v1"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -308,7 +308,7 @@ func RegisterUserV1HandlerClient(ctx context.Context, mux *runtime.ServeMux, cli
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/user_v1.UserV1/Create", runtime.WithHTTPPathPattern("/user/v1/create"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/user_v1.UserV1/Create", runtime.WithHTTPPathPattern("/user/v1"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -394,7 +394,7 @@ func RegisterUserV1HandlerClient(ctx context.Context, mux *runtime.ServeMux, cli
 }
 
 var (
-	pattern_UserV1_Create_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"user", "v1", "create"}, ""))
+	pattern_UserV1_Create_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"user", "v1"}, ""))
 
 	pattern_UserV1_Get_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"user", "v1"}, ""))
 

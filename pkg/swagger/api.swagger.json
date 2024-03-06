@@ -88,6 +88,37 @@
           "UserV1"
         ]
       },
+      "post": {
+        "summary": "Create is used for creating new user.",
+        "operationId": "UserV1_Create",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/user_v1CreateResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/user_v1CreateRequest"
+            }
+          }
+        ],
+        "tags": [
+          "UserV1"
+        ]
+      },
       "patch": {
         "summary": "Update is used for updating user info.",
         "operationId": "UserV1_Update",
@@ -113,39 +144,6 @@
             "required": true,
             "schema": {
               "$ref": "#/definitions/user_v1UpdateRequest"
-            }
-          }
-        ],
-        "tags": [
-          "UserV1"
-        ]
-      }
-    },
-    "/user/v1/create": {
-      "post": {
-        "summary": "Create is used for creating new user.",
-        "operationId": "UserV1_Create",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/user_v1CreateResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/user_v1CreateRequest"
             }
           }
         ],
