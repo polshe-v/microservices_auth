@@ -32,10 +32,11 @@ func TestUpdate(t *testing.T) {
 		ctx = context.Background()
 		mc  = minimock.NewController(t)
 
-		id    = int64(1)
-		name  = "name"
-		email = "email"
-		role  = desc.Role_USER
+		id       = int64(1)
+		name     = "name"
+		email    = "email"
+		role     = desc.Role_USER
+		roleName = "USER"
 
 		serviceErr = fmt.Errorf("service error")
 
@@ -58,7 +59,10 @@ func TestUpdate(t *testing.T) {
 				String: email,
 				Valid:  true,
 			},
-			Role: desc.Role_name[int32(role)],
+			Role: sql.NullString{
+				String: roleName,
+				Valid:  true,
+			},
 		}
 
 		res = &empty.Empty{}

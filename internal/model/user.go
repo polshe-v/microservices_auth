@@ -29,5 +29,5 @@ type UserUpdate struct {
 	ID    int64
 	Name  sql.NullString
 	Email sql.NullString
-	Role  string
+	Role  sql.NullString
 }

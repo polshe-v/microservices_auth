@@ -53,7 +53,10 @@ func TestUpdate(t *testing.T) {
 				String: email,
 				Valid:  true,
 			},
-			Role: role,
+			Role: sql.NullString{
+				String: role,
+				Valid:  true,
+			},
 		}
 
 		reqLog = &model.Log{

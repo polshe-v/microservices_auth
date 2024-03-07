@@ -42,7 +42,9 @@ func ToUserUpdateFromDesc(user *desc.UserUpdate) *model.UserUpdate {
 	var (
 		name  sql.NullString
 		email sql.NullString
+		role  sql.NullString
 	)
+
 	if user.Name != nil {
 		name = sql.NullString{
 			String: user.Name.GetValue(),
@@ -56,10 +58,17 @@ func ToUserUpdateFromDesc(user *desc.UserUpdate) *model.UserUpdate {
 		}
 	}
 
+	if user.Role != 0 {
+		role = sql.NullString{
+			String: desc.Role_name[int32(user.Role)],
+			Valid:  true,
+		}
+	}
+
 	return &model.UserUpdate{
 		ID:    user.Id,
 		Name:  name,
 		Email: email,
-		Role:  desc.Role_name[int32(user.Role)],
+		Role:  role,
 	}
 }

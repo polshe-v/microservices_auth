@@ -11,6 +11,8 @@ services:
       - ${ENV}.env
     ports:
       - "${GRPC_PORT}:${GRPC_PORT}"
+      - "${HTTP_PORT}:${HTTP_PORT}"
+      - "${SWAGGER_PORT}:${SWAGGER_PORT}"
     depends_on:
       db-auth:
         condition: service_healthy
