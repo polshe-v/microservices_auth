@@ -80,14 +80,11 @@ generate-mocks:
 	go generate ./internal/repository
 	go generate ./internal/service
 
-generate-cert:
-	mkdir $(TLS_PATH)
-	openssl genrsa -out $(TLS_PATH)/ca.key 4096
-	openssl req -new -x509 -key $(TLS_PATH)/ca.key -sha256 -days 365 -subj "/C=RU/ST=Moscow/O=CA, Inc." -out $(TLS_PATH)/ca.pem
-	openssl genrsa -out $(TLS_PATH)/service.key 4096
-	openssl req -new -key $(TLS_PATH)/service.key -config openssl.cnf -out $(TLS_PATH)/service.csr
-	openssl x509 -req -in $(TLS_PATH)/service.csr -CA $(TLS_PATH)/ca.pem -CAkey $(TLS_PATH)/ca.key -extfile openssl.cnf -extensions req_ext -out $(TLS_PATH)/service.pem -days 365 -sha256
-	rm -rf $(TLS_PATH)/service.csr
+generate-cert: $(TLS_PATH)/ca.key $(TLS_PATH)/ca.pem
+	openssl genrsa -out $(TLS_PATH)/auth.key 4096
+	openssl req -new -key $(TLS_PATH)/auth.key -config openssl.cnf -out $(TLS_PATH)/auth.csr
+	openssl x509 -req -in $(TLS_PATH)/auth.csr -CA $(TLS_PATH)/ca.pem -CAkey $(TLS_PATH)/ca.key -extfile openssl.cnf -extensions req_ext -out $(TLS_PATH)/auth.pem -days 365 -sha256
+	rm -rf $(TLS_PATH)/auth.csr
 
 check-env:
 ifeq ($(ENV),)
