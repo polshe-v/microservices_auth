@@ -14,7 +14,7 @@ import (
 	"github.com/rakyll/statik/fs"
 	"github.com/rs/cors"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/reflection"
 
 	"github.com/polshe-v/microservices_auth/internal/config"
@@ -125,8 +125,14 @@ func (a *App) initServiceProvider(_ context.Context) error {
 }
 
 func (a *App) initGrpcServer(ctx context.Context) error {
+	cfg := a.serviceProvider.GrpcConfig()
+	creds, err := credentials.NewServerTLSFromFile(cfg.CertPath(), cfg.KeyPath())
+	if err != nil {
+		return err
+	}
+
 	a.grpcServer = grpc.NewServer(
-		grpc.Creds(insecure.NewCredentials()),
+		grpc.Creds(creds),
 		grpc.UnaryInterceptor(interceptor.ValidateInterceptor),
 	)
 
@@ -140,13 +146,18 @@ func (a *App) initGrpcServer(ctx context.Context) error {
 }
 
 func (a *App) initHTTPServer(ctx context.Context) error {
-	mux := runtime.NewServeMux()
-
-	opts := []grpc.DialOption{
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	cfg := a.serviceProvider.GrpcConfig()
+	creds, err := credentials.NewClientTLSFromFile(cfg.CertPath(), "")
+	if err != nil {
+		return err
 	}
 
-	err := desc.RegisterUserV1HandlerFromEndpoint(ctx, mux, a.serviceProvider.GrpcConfig().Address(), opts)
+	opts := []grpc.DialOption{
+		grpc.WithTransportCredentials(creds),
+	}
+
+	mux := runtime.NewServeMux()
+	err = desc.RegisterUserV1HandlerFromEndpoint(ctx, mux, cfg.Address(), opts)
 	if err != nil {
 		return err
 	}

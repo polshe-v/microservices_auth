@@ -17,6 +17,7 @@ COPY . .
 
 RUN go mod download && go mod verify
 RUN make build-app ENV=${ENV}
+RUN chown -R auth:auth ./
 
 FROM scratch
 ARG CONFIG
@@ -26,6 +27,7 @@ COPY --from=builder /opt/app/bin/main .
 COPY --from=builder /etc/passwd /etc/passwd
 COPY --from=builder /etc/group /etc/group
 COPY --from=builder /opt/app/${CONFIG} ./config
+COPY --from=builder /opt/app/tls/ ./tls/
 
 USER auth:auth
 
