@@ -15,7 +15,7 @@ func (s *serv) Login(ctx context.Context, creds *model.UserCreds) (string, error
 	authInfo, err := s.userRepository.GetAuthInfo(ctx, creds.Username)
 	if err != nil {
 		log.Print(err)
-		return "", errors.New("no user found")
+		return "", errors.New("user not found")
 	}
 
 	if !utils.VerifyPassword(authInfo.Password, creds.Password) {

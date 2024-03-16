@@ -2,7 +2,6 @@ package access
 
 import (
 	"context"
-	"log"
 
 	sq "github.com/Masterminds/squirrel"
 

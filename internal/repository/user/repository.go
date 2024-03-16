@@ -2,15 +2,19 @@ package user
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	sq "github.com/Masterminds/squirrel"
+	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 
 	"github.com/polshe-v/microservices_auth/internal/model"
 	"github.com/polshe-v/microservices_auth/internal/repository"
 	"github.com/polshe-v/microservices_auth/internal/repository/user/converter"
 	modelRepo "github.com/polshe-v/microservices_auth/internal/repository/user/model"
+	userService "github.com/polshe-v/microservices_auth/internal/service/user"
 	"github.com/polshe-v/microservices_common/pkg/db"
 )
 
@@ -55,6 +59,10 @@ func (r *repo) Create(ctx context.Context, user *model.UserCreate) (int64, error
 	var id int64
 	err = r.db.DB().QueryRowContext(ctx, q, args...).Scan(&id)
 	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
+			return 0, userService.ErrNameExists
+		}
 		return 0, err
 	}
 
