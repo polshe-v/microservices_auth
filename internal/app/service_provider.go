@@ -4,13 +4,19 @@ import (
 	"context"
 	"log"
 
+	"github.com/polshe-v/microservices_auth/internal/api/access"
+	"github.com/polshe-v/microservices_auth/internal/api/auth"
 	"github.com/polshe-v/microservices_auth/internal/api/user"
 	"github.com/polshe-v/microservices_auth/internal/config"
 	"github.com/polshe-v/microservices_auth/internal/config/env"
 	"github.com/polshe-v/microservices_auth/internal/repository"
+	accessRepository "github.com/polshe-v/microservices_auth/internal/repository/access"
+	keyRepository "github.com/polshe-v/microservices_auth/internal/repository/key"
 	logRepository "github.com/polshe-v/microservices_auth/internal/repository/log"
 	userRepository "github.com/polshe-v/microservices_auth/internal/repository/user"
 	"github.com/polshe-v/microservices_auth/internal/service"
+	accessService "github.com/polshe-v/microservices_auth/internal/service/access"
+	authService "github.com/polshe-v/microservices_auth/internal/service/auth"
 	userService "github.com/polshe-v/microservices_auth/internal/service/user"
 	"github.com/polshe-v/microservices_common/pkg/closer"
 	"github.com/polshe-v/microservices_common/pkg/db"
@@ -27,10 +33,16 @@ type serviceProvider struct {
 	dbClient  db.Client
 	txManager db.TxManager
 
-	userRepository repository.UserRepository
-	logRepository  repository.LogRepository
-	userService    service.UserService
-	userImpl       *user.Implementation
+	userRepository   repository.UserRepository
+	keyRepository    repository.KeyRepository
+	accessRepository repository.AccessRepository
+	logRepository    repository.LogRepository
+	userService      service.UserService
+	authService      service.AuthService
+	accessService    service.AccessService
+	userImpl         *user.Implementation
+	authImpl         *auth.Implementation
+	accessImpl       *access.Implementation
 }
 
 func newServiceProvider() *serviceProvider {
@@ -123,6 +135,20 @@ func (s *serviceProvider) UserRepository(ctx context.Context) repository.UserRep
 	return s.userRepository
 }
 
+func (s *serviceProvider) KeyRepository(ctx context.Context) repository.KeyRepository {
+	if s.keyRepository == nil {
+		s.keyRepository = keyRepository.NewRepository(s.DBClient(ctx))
+	}
+	return s.keyRepository
+}
+
+func (s *serviceProvider) AccessRepository(ctx context.Context) repository.AccessRepository {
+	if s.accessRepository == nil {
+		s.accessRepository = accessRepository.NewRepository(s.DBClient(ctx))
+	}
+	return s.accessRepository
+}
+
 func (s *serviceProvider) LogRepository(ctx context.Context) repository.LogRepository {
 	if s.logRepository == nil {
 		s.logRepository = logRepository.NewRepository(s.DBClient(ctx))
@@ -137,9 +163,37 @@ func (s *serviceProvider) UserService(ctx context.Context) service.UserService {
 	return s.userService
 }
 
+func (s *serviceProvider) AuthService(ctx context.Context) service.AuthService {
+	if s.authService == nil {
+		s.authService = authService.NewService(s.UserRepository(ctx), s.KeyRepository(ctx), s.LogRepository(ctx), s.TxManager(ctx))
+	}
+	return s.authService
+}
+
+func (s *serviceProvider) AccessService(ctx context.Context) service.AccessService {
+	if s.accessService == nil {
+		s.accessService = accessService.NewService(s.AccessRepository(ctx), s.KeyRepository(ctx), s.LogRepository(ctx), s.TxManager(ctx))
+	}
+	return s.accessService
+}
+
 func (s *serviceProvider) UserImpl(ctx context.Context) *user.Implementation {
 	if s.userImpl == nil {
 		s.userImpl = user.NewImplementation(s.UserService(ctx))
 	}
 	return s.userImpl
+}
+
+func (s *serviceProvider) AuthImpl(ctx context.Context) *auth.Implementation {
+	if s.authImpl == nil {
+		s.authImpl = auth.NewImplementation(s.AuthService(ctx))
+	}
+	return s.authImpl
+}
+
+func (s *serviceProvider) AccessImpl(ctx context.Context) *access.Implementation {
+	if s.accessImpl == nil {
+		s.accessImpl = access.NewImplementation(s.AccessService(ctx))
+	}
+	return s.accessImpl
 }

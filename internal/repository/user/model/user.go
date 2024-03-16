@@ -14,3 +14,10 @@ type User struct {
 	CreatedAt time.Time    `db:"created_at"`
 	UpdatedAt sql.NullTime `db:"updated_at"`
 }
+
+// AuthInfo type is the structure for user authentication data from storage.
+type AuthInfo struct {
+	Username string `db:"name"`
+	Password string `db:"password"`
+	Role     string `db:"role"`
+}

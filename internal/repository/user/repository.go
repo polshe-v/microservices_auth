@@ -81,9 +81,6 @@ func (r *repo) Get(ctx context.Context, id int64) (*model.User, error) {
 	var user modelRepo.User
 	err = r.db.DB().ScanOneContext(ctx, &user, q, args...)
 	if err != nil {
-		if err == pgx.ErrNoRows {
-			return nil, err
-		}
 		return nil, err
 	}
 
@@ -147,4 +144,33 @@ func (r *repo) Delete(ctx context.Context, id int64) error {
 	}
 
 	return nil
+}
+
+func (r *repo) GetAuthInfo(ctx context.Context, username string) (*model.AuthInfo, error) {
+	builderSelect := sq.Select(nameColumn, roleColumn, passwordColumn).
+		From(tableName).
+		PlaceholderFormat(sq.Dollar).
+		Where(sq.Eq{nameColumn: username}).
+		Limit(1)
+
+	query, args, err := builderSelect.ToSql()
+	if err != nil {
+		return nil, err
+	}
+
+	q := db.Query{
+		Name:     "user_repository.GetAuthInfo",
+		QueryRaw: query,
+	}
+
+	var authInfo modelRepo.AuthInfo
+	err = r.db.DB().ScanOneContext(ctx, &authInfo, q, args...)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, err
+		}
+		return nil, err
+	}
+
+	return converter.ToAuthInfoFromRepo(&authInfo), nil
 }
