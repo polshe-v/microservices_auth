@@ -2,10 +2,11 @@ package user
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 
-	"github.com/pkg/errors"
+	errorsExt "github.com/pkg/errors"
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/polshe-v/microservices_auth/internal/model"
@@ -45,7 +46,7 @@ func (s *serv) Create(ctx context.Context, user *model.UserCreate) (int64, error
 
 	if err != nil {
 		log.Print(err)
-		if errors.Cause(err) == ErrNameExists {
+		if errorsExt.Cause(err) == ErrNameExists {
 			return 0, ErrNameExists
 		}
 		return 0, errors.New("failed to create user")

@@ -5,7 +5,6 @@ import (
 
 	"github.com/polshe-v/microservices_auth/internal/repository"
 	"github.com/polshe-v/microservices_auth/internal/service"
-	"github.com/polshe-v/microservices_common/pkg/db"
 )
 
 const (
@@ -16,16 +15,12 @@ const (
 type serv struct {
 	accessRepository repository.AccessRepository
 	keyRepository    repository.KeyRepository
-	logRepository    repository.LogRepository
-	txManager        db.TxManager
 }
 
 // NewService creates new object of service layer.
-func NewService(accessRepository repository.AccessRepository, keyRepository repository.KeyRepository, logRepository repository.LogRepository, txManager db.TxManager) service.AccessService {
+func NewService(accessRepository repository.AccessRepository, keyRepository repository.KeyRepository) service.AccessService {
 	return &serv{
 		accessRepository: accessRepository,
 		keyRepository:    keyRepository,
-		logRepository:    logRepository,
-		txManager:        txManager,
 	}
 }

@@ -165,14 +165,14 @@ func (s *serviceProvider) UserService(ctx context.Context) service.UserService {
 
 func (s *serviceProvider) AuthService(ctx context.Context) service.AuthService {
 	if s.authService == nil {
-		s.authService = authService.NewService(s.UserRepository(ctx), s.KeyRepository(ctx), s.LogRepository(ctx), s.TxManager(ctx))
+		s.authService = authService.NewService(s.UserRepository(ctx), s.KeyRepository(ctx))
 	}
 	return s.authService
 }
 
 func (s *serviceProvider) AccessService(ctx context.Context) service.AccessService {
 	if s.accessService == nil {
-		s.accessService = accessService.NewService(s.AccessRepository(ctx), s.KeyRepository(ctx), s.LogRepository(ctx), s.TxManager(ctx))
+		s.accessService = accessService.NewService(s.AccessRepository(ctx), s.KeyRepository(ctx))
 	}
 	return s.accessService
 }

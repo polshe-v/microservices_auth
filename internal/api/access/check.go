@@ -10,7 +10,7 @@ import (
 
 // Check performs user authorization.
 func (i *Implementation) Check(ctx context.Context, req *desc.CheckRequest) (*empty.Empty, error) {
-	err := i.accessService.Check(ctx, req.GetEndpointAddress())
+	err := i.accessService.Check(ctx, req.GetEndpoint())
 	if err != nil {
 		return nil, err
 	}

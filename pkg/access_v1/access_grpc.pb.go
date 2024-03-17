@@ -27,6 +27,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type AccessV1Client interface {
+	// Check executes user authorization for endpoint.
 	Check(ctx context.Context, in *CheckRequest, opts ...grpc.CallOption) (*empty.Empty, error)
 }
 
@@ -51,6 +52,7 @@ func (c *accessV1Client) Check(ctx context.Context, in *CheckRequest, opts ...gr
 // All implementations must embed UnimplementedAccessV1Server
 // for forward compatibility
 type AccessV1Server interface {
+	// Check executes user authorization for endpoint.
 	Check(context.Context, *CheckRequest) (*empty.Empty, error)
 	mustEmbedUnimplementedAccessV1Server()
 }

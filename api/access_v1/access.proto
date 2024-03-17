@@ -13,5 +13,5 @@ service AccessV1 {
 
 message CheckRequest {
 	// Endpoint where user wants access to.
-	string endpoint_address = 1;
+	string endpoint = 1;
 }
