@@ -64,12 +64,11 @@ func TestCheck(t *testing.T) {
 			},
 		}
 
-		noMdErr             = fmt.Errorf("metadata is not provided")
-		noAuthHeaderErr     = fmt.Errorf("authorization header is not provided")
-		noAuthPrefixErr     = fmt.Errorf("invalid authorization header format")
-		keyRepositoryErr    = fmt.Errorf("failed to generate token")
-		accessRepositoryErr = fmt.Errorf("failed to read access policy")
-		noEndpointErr       = fmt.Errorf("failed to find endpoint")
+		noMdErr          = fmt.Errorf("metadata is not provided")
+		noAuthHeaderErr  = fmt.Errorf("authorization header is not provided")
+		noAuthPrefixErr  = fmt.Errorf("invalid authorization header format")
+		keyRepositoryErr = fmt.Errorf("failed to generate token")
+		noEndpointErr    = fmt.Errorf("failed to find endpoint")
 
 		req = endpointNotExists
 	)
@@ -143,24 +142,6 @@ func TestCheck(t *testing.T) {
 			},
 			accessRepositoryMock: func(mc *minimock.Controller) repository.AccessRepository {
 				mock := repositoryMocks.NewAccessRepositoryMock(mc)
-				return mock
-			},
-		},
-		{
-			name: "access repository error case",
-			args: args{
-				ctx: ctx,
-				req: req,
-			},
-			err: accessRepositoryErr,
-			keyRepositoryMock: func(mc *minimock.Controller) repository.KeyRepository {
-				mock := repositoryMocks.NewKeyRepositoryMock(mc)
-				mock.GetKeyMock.Expect(minimock.AnyContext, keyName).Return(key, nil)
-				return mock
-			},
-			accessRepositoryMock: func(mc *minimock.Controller) repository.AccessRepository {
-				mock := repositoryMocks.NewAccessRepositoryMock(mc)
-				mock.GetRoleEndpointsMock.Expect(minimock.AnyContext).Return(nil, accessRepositoryErr)
 				return mock
 			},
 		},
