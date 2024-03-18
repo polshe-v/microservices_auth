@@ -7,6 +7,7 @@ import (
 
 	"github.com/gojuno/minimock/v3"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc/metadata"
 
 	"github.com/polshe-v/microservices_auth/internal/model"
 	"github.com/polshe-v/microservices_auth/internal/repository"
@@ -26,16 +27,27 @@ func TestCheck(t *testing.T) {
 	}
 
 	var (
-		ctx = context.Background()
-		mc  = minimock.NewController(t)
+		mdNoAuthHeader = metadata.New(map[string]string{"header": "access_token"})
+		mdNoAuthPrefix = metadata.New(map[string]string{"Authorization": "access_token"})
+		md             = metadata.New(map[string]string{"Authorization": "Bearer access_token"})
+
+		ctxNoMd         = context.Background()
+		ctx             = metadata.NewIncomingContext(ctxNoMd, md)
+		ctxNoAuthHeader = metadata.NewIncomingContext(ctxNoMd, mdNoAuthHeader)
+		ctxNoAuthPrefix = metadata.NewIncomingContext(ctxNoMd, mdNoAuthPrefix)
+
+		mc = minimock.NewController(t)
 
 		endpointCreate      = "/chat_v1.ChatV1/Create"
 		endpointDelete      = "/chat_v1.ChatV1/Delete"
 		endpointSendMessage = "/chat_v1.ChatV1/SendMessage"
-		roleUser            = "USER"
-		roleAdmin           = "ADMIN"
-		keyName             = "key_name"
-		key                 = "key"
+		endpointNotExists   = "/chat_v1.ChatV1/NotExists"
+
+		roleUser  = "USER"
+		roleAdmin = "ADMIN"
+
+		keyName = "access"
+		key     = "key"
 
 		endpointPermissions = []*model.EndpointPermissions{
 			{
@@ -52,9 +64,14 @@ func TestCheck(t *testing.T) {
 			},
 		}
 
-		repositoryErr = fmt.Errorf("repository error")
+		noMdErr             = fmt.Errorf("metadata is not provided")
+		noAuthHeaderErr     = fmt.Errorf("authorization header is not provided")
+		noAuthPrefixErr     = fmt.Errorf("invalid authorization header format")
+		keyRepositoryErr    = fmt.Errorf("failed to generate token")
+		accessRepositoryErr = fmt.Errorf("failed to read access policy")
+		noEndpointErr       = fmt.Errorf("failed to find endpoint")
 
-		req = endpointCreate
+		req = endpointNotExists
 	)
 
 	tests := []struct {
@@ -65,20 +82,50 @@ func TestCheck(t *testing.T) {
 		accessRepositoryMock accessRepositoryMockFunc
 	}{
 		{
-			name: "success case",
+			name: "metadata not provided error case",
 			args: args{
-				ctx: ctx,
+				ctx: ctxNoMd,
 				req: req,
 			},
-			err: nil,
+			err: noMdErr,
 			keyRepositoryMock: func(mc *minimock.Controller) repository.KeyRepository {
 				mock := repositoryMocks.NewKeyRepositoryMock(mc)
-				mock.GetKeyMock.Expect(minimock.AnyContext, keyName).Return(key, nil)
 				return mock
 			},
 			accessRepositoryMock: func(mc *minimock.Controller) repository.AccessRepository {
 				mock := repositoryMocks.NewAccessRepositoryMock(mc)
-				mock.GetRoleEndpointsMock.Expect(minimock.AnyContext).Return(endpointPermissions, nil)
+				return mock
+			},
+		},
+		{
+			name: "authorization header not provided error case",
+			args: args{
+				ctx: ctxNoAuthHeader,
+				req: req,
+			},
+			err: noAuthHeaderErr,
+			keyRepositoryMock: func(mc *minimock.Controller) repository.KeyRepository {
+				mock := repositoryMocks.NewKeyRepositoryMock(mc)
+				return mock
+			},
+			accessRepositoryMock: func(mc *minimock.Controller) repository.AccessRepository {
+				mock := repositoryMocks.NewAccessRepositoryMock(mc)
+				return mock
+			},
+		},
+		{
+			name: "authorization header format error case",
+			args: args{
+				ctx: ctxNoAuthPrefix,
+				req: req,
+			},
+			err: noAuthPrefixErr,
+			keyRepositoryMock: func(mc *minimock.Controller) repository.KeyRepository {
+				mock := repositoryMocks.NewKeyRepositoryMock(mc)
+				return mock
+			},
+			accessRepositoryMock: func(mc *minimock.Controller) repository.AccessRepository {
+				mock := repositoryMocks.NewAccessRepositoryMock(mc)
 				return mock
 			},
 		},
@@ -88,10 +135,10 @@ func TestCheck(t *testing.T) {
 				ctx: ctx,
 				req: req,
 			},
-			err: repositoryErr,
+			err: keyRepositoryErr,
 			keyRepositoryMock: func(mc *minimock.Controller) repository.KeyRepository {
 				mock := repositoryMocks.NewKeyRepositoryMock(mc)
-				mock.GetKeyMock.Expect(minimock.AnyContext, keyName).Return("", repositoryErr)
+				mock.GetKeyMock.Expect(minimock.AnyContext, keyName).Return("", keyRepositoryErr)
 				return mock
 			},
 			accessRepositoryMock: func(mc *minimock.Controller) repository.AccessRepository {
@@ -105,7 +152,7 @@ func TestCheck(t *testing.T) {
 				ctx: ctx,
 				req: req,
 			},
-			err: repositoryErr,
+			err: accessRepositoryErr,
 			keyRepositoryMock: func(mc *minimock.Controller) repository.KeyRepository {
 				mock := repositoryMocks.NewKeyRepositoryMock(mc)
 				mock.GetKeyMock.Expect(minimock.AnyContext, keyName).Return(key, nil)
@@ -113,7 +160,25 @@ func TestCheck(t *testing.T) {
 			},
 			accessRepositoryMock: func(mc *minimock.Controller) repository.AccessRepository {
 				mock := repositoryMocks.NewAccessRepositoryMock(mc)
-				mock.GetRoleEndpointsMock.Expect(minimock.AnyContext).Return(nil, repositoryErr)
+				mock.GetRoleEndpointsMock.Expect(minimock.AnyContext).Return(nil, accessRepositoryErr)
+				return mock
+			},
+		},
+		{
+			name: "endpoint not found error case",
+			args: args{
+				ctx: ctx,
+				req: req,
+			},
+			err: noEndpointErr,
+			keyRepositoryMock: func(mc *minimock.Controller) repository.KeyRepository {
+				mock := repositoryMocks.NewKeyRepositoryMock(mc)
+				mock.GetKeyMock.Expect(minimock.AnyContext, keyName).Return(key, nil)
+				return mock
+			},
+			accessRepositoryMock: func(mc *minimock.Controller) repository.AccessRepository {
+				mock := repositoryMocks.NewAccessRepositoryMock(mc)
+				mock.GetRoleEndpointsMock.Expect(minimock.AnyContext).Return(endpointPermissions, nil)
 				return mock
 			},
 		},

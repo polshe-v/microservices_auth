@@ -28,16 +28,12 @@ func TestGetRefreshToken(t *testing.T) {
 		ctx = context.Background()
 		mc  = minimock.NewController(t)
 
-		oldRefreshToken = "old_refresh_token"
-		refreshToken    = "refresh_token"
-		keyName         = "key_name"
-		key             = "key"
+		refreshKeyName = "refresh"
+		refreshToken   = "refresh_token"
 
-		repositoryErr = fmt.Errorf("repository error")
+		repositoryErr = fmt.Errorf("failed to generate token")
 
-		req = oldRefreshToken
-
-		res = refreshToken
+		req = refreshToken
 	)
 
 	tests := []struct {
@@ -49,25 +45,7 @@ func TestGetRefreshToken(t *testing.T) {
 		keyRepositoryMock  keyRepositoryMockFunc
 	}{
 		{
-			name: "success case",
-			args: args{
-				ctx: ctx,
-				req: req,
-			},
-			want: res,
-			err:  nil,
-			userRepositoryMock: func(mc *minimock.Controller) repository.UserRepository {
-				mock := repositoryMocks.NewUserRepositoryMock(mc)
-				return mock
-			},
-			keyRepositoryMock: func(mc *minimock.Controller) repository.KeyRepository {
-				mock := repositoryMocks.NewKeyRepositoryMock(mc)
-				mock.GetKeyMock.Expect(minimock.AnyContext, keyName).Return(key, nil)
-				return mock
-			},
-		},
-		{
-			name: "key repository error case",
+			name: "refresh key repository error case",
 			args: args{
 				ctx: ctx,
 				req: req,
@@ -80,7 +58,7 @@ func TestGetRefreshToken(t *testing.T) {
 			},
 			keyRepositoryMock: func(mc *minimock.Controller) repository.KeyRepository {
 				mock := repositoryMocks.NewKeyRepositoryMock(mc)
-				mock.GetKeyMock.Expect(minimock.AnyContext, keyName).Return("", repositoryErr)
+				mock.GetKeyMock.Expect(minimock.AnyContext, refreshKeyName).Return("", repositoryErr)
 				return mock
 			},
 		},

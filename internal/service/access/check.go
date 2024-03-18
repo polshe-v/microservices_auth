@@ -2,11 +2,11 @@ package access
 
 import (
 	"context"
+	"errors"
 	"log"
 	"slices"
 	"strings"
 
-	"github.com/pkg/errors"
 	"google.golang.org/grpc/metadata"
 
 	"github.com/polshe-v/microservices_auth/internal/converter"
@@ -45,11 +45,6 @@ func (s *serv) Check(ctx context.Context, endpoint string) error {
 		return errors.New("failed to generate token")
 	}
 
-	claims, err := utils.VerifyToken(accessToken, []byte(accessTokenSecretKey))
-	if err != nil {
-		return errors.New("access token is invalid")
-	}
-
 	if accessibleRoles == nil {
 		endpointPermissions, errRepo := s.accessRepository.GetRoleEndpoints(ctx)
 		if errRepo != nil {
@@ -64,6 +59,11 @@ func (s *serv) Check(ctx context.Context, endpoint string) error {
 	if !ok {
 		log.Print(err)
 		return errors.New("failed to find endpoint")
+	}
+
+	claims, err := utils.VerifyToken(accessToken, []byte(accessTokenSecretKey))
+	if err != nil {
+		return errors.New("access token is invalid")
 	}
 
 	// If role is not in the slice of roles allowed to use the endpoint, then deny access

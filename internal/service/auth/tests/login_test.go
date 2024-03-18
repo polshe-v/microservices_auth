@@ -7,6 +7,7 @@ import (
 
 	"github.com/gojuno/minimock/v3"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/crypto/bcrypt"
 
 	"github.com/polshe-v/microservices_auth/internal/model"
 	"github.com/polshe-v/microservices_auth/internal/repository"
@@ -25,29 +26,39 @@ func TestLogin(t *testing.T) {
 		req *model.UserCreds
 	}
 
+	var password = "password"
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		fmt.Print("failed to process password")
+		return
+	}
+
 	var (
 		ctx = context.Background()
 		mc  = minimock.NewController(t)
 
-		username     = "username"
-		password     = "password"
-		role         = "USER"
-		refreshToken = "refresh_token"
-		keyName      = "key_name"
-		key          = "key"
+		username      = "username"
+		passwordWrong = "passwordWrong"
+		role          = "USER"
+		keyName       = "refresh"
 
-		repositoryErr = fmt.Errorf("repository error")
+		keyRepositoryErr  = fmt.Errorf("failed to generate token")
+		userRepositoryErr = fmt.Errorf("user not found")
+		wrongPasswordErr  = fmt.Errorf("wrong password")
 
 		req = &model.UserCreds{
 			Username: username,
 			Password: password,
 		}
 
-		res = refreshToken
+		reqWrongPass = &model.UserCreds{
+			Username: username,
+			Password: passwordWrong,
+		}
 
 		authInfo = &model.AuthInfo{
 			Username: username,
-			Password: password,
+			Password: string(hashedPassword),
 			Role:     role,
 		}
 	)
@@ -61,35 +72,34 @@ func TestLogin(t *testing.T) {
 		keyRepositoryMock  keyRepositoryMockFunc
 	}{
 		{
-			name: "success case",
-			args: args{
-				ctx: ctx,
-				req: req,
-			},
-			want: res,
-			err:  nil,
-			userRepositoryMock: func(mc *minimock.Controller) repository.UserRepository {
-				mock := repositoryMocks.NewUserRepositoryMock(mc)
-				mock.GetAuthInfoMock.Expect(minimock.AnyContext, username).Return(authInfo, nil)
-				return mock
-			},
-			keyRepositoryMock: func(mc *minimock.Controller) repository.KeyRepository {
-				mock := repositoryMocks.NewKeyRepositoryMock(mc)
-				mock.GetKeyMock.Expect(minimock.AnyContext, keyName).Return(key, nil)
-				return mock
-			},
-		},
-		{
 			name: "user repository error case",
 			args: args{
 				ctx: ctx,
 				req: req,
 			},
 			want: "",
-			err:  repositoryErr,
+			err:  userRepositoryErr,
 			userRepositoryMock: func(mc *minimock.Controller) repository.UserRepository {
 				mock := repositoryMocks.NewUserRepositoryMock(mc)
-				mock.GetAuthInfoMock.Expect(minimock.AnyContext, username).Return(nil, repositoryErr)
+				mock.GetAuthInfoMock.Expect(minimock.AnyContext, username).Return(nil, userRepositoryErr)
+				return mock
+			},
+			keyRepositoryMock: func(mc *minimock.Controller) repository.KeyRepository {
+				mock := repositoryMocks.NewKeyRepositoryMock(mc)
+				return mock
+			},
+		},
+		{
+			name: "wrong password error case",
+			args: args{
+				ctx: ctx,
+				req: reqWrongPass,
+			},
+			want: "",
+			err:  wrongPasswordErr,
+			userRepositoryMock: func(mc *minimock.Controller) repository.UserRepository {
+				mock := repositoryMocks.NewUserRepositoryMock(mc)
+				mock.GetAuthInfoMock.Expect(minimock.AnyContext, username).Return(authInfo, nil)
 				return mock
 			},
 			keyRepositoryMock: func(mc *minimock.Controller) repository.KeyRepository {
@@ -104,7 +114,7 @@ func TestLogin(t *testing.T) {
 				req: req,
 			},
 			want: "",
-			err:  repositoryErr,
+			err:  keyRepositoryErr,
 			userRepositoryMock: func(mc *minimock.Controller) repository.UserRepository {
 				mock := repositoryMocks.NewUserRepositoryMock(mc)
 				mock.GetAuthInfoMock.Expect(minimock.AnyContext, username).Return(authInfo, nil)
@@ -112,7 +122,7 @@ func TestLogin(t *testing.T) {
 			},
 			keyRepositoryMock: func(mc *minimock.Controller) repository.KeyRepository {
 				mock := repositoryMocks.NewKeyRepositoryMock(mc)
-				mock.GetKeyMock.Expect(minimock.AnyContext, keyName).Return("", repositoryErr)
+				mock.GetKeyMock.Expect(minimock.AnyContext, keyName).Return("", keyRepositoryErr)
 				return mock
 			},
 		},

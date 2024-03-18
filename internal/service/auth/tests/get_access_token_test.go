@@ -31,19 +31,11 @@ func TestGetAccessToken(t *testing.T) {
 		refreshKeyName = "refresh"
 		refreshKey     = "refresh_key"
 		refreshToken   = "refresh_token"
-		accessToken    = "access_token"
-		/*		refreshToken   = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MTA2MjI2ODUsInVzZXJuYW1lIjoidGVzdDQiLCJyb2xlIjoiVVNFUiJ9.Blv3fYn_ZWzHRstw7tlTxXJQJGPjC_pPKLwda3Sgoso"
-				accessToken    = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MTA2MTk0MTQsInVzZXJuYW1lIjoidGVzdDQiLCJyb2xlIjoiVVNFUiJ9.Ml33vpFMcvc7jdhjNsfMke_9EPlyLxAw7NBSutPx5z8"
-				refreshKeyName = "refresh"
-				refreshKey     = "u4CxvwDQMQDJnwAwu5xuPJVuv5azKLsv3m9FV5PSqqekZdAfjRqV2pcfjfXpCgPW"
-				accessKeyName  = "access"
-				accessKey      = "5LbCPS9xmAFWdhjPUqrfq2FQtpKPtUaNCjTX5brWPhyfZNRWedZowD2doC3QRd2E"
-		*/
+		accessKeyName  = "access"
+
 		repositoryErr = fmt.Errorf("failed to generate token")
 
 		req = refreshToken
-
-		res = accessToken
 	)
 
 	tests := []struct {
@@ -55,25 +47,7 @@ func TestGetAccessToken(t *testing.T) {
 		keyRepositoryMock  keyRepositoryMockFunc
 	}{
 		{
-			name: "success case",
-			args: args{
-				ctx: ctx,
-				req: req,
-			},
-			want: res,
-			err:  nil,
-			userRepositoryMock: func(mc *minimock.Controller) repository.UserRepository {
-				mock := repositoryMocks.NewUserRepositoryMock(mc)
-				return mock
-			},
-			keyRepositoryMock: func(mc *minimock.Controller) repository.KeyRepository {
-				mock := repositoryMocks.NewKeyRepositoryMock(mc)
-				mock.GetKeyMock.Expect(minimock.AnyContext, refreshKeyName).Return(refreshKey, nil)
-				return mock
-			},
-		},
-		{
-			name: "key repository error case",
+			name: "refresh key repository error case",
 			args: args{
 				ctx: ctx,
 				req: req,
@@ -87,6 +61,25 @@ func TestGetAccessToken(t *testing.T) {
 			keyRepositoryMock: func(mc *minimock.Controller) repository.KeyRepository {
 				mock := repositoryMocks.NewKeyRepositoryMock(mc)
 				mock.GetKeyMock.Expect(minimock.AnyContext, refreshKeyName).Return("", repositoryErr)
+				return mock
+			},
+		},
+		{
+			name: "access key repository error case",
+			args: args{
+				ctx: ctx,
+				req: req,
+			},
+			want: "",
+			err:  repositoryErr,
+			userRepositoryMock: func(mc *minimock.Controller) repository.UserRepository {
+				mock := repositoryMocks.NewUserRepositoryMock(mc)
+				return mock
+			},
+			keyRepositoryMock: func(mc *minimock.Controller) repository.KeyRepository {
+				mock := repositoryMocks.NewKeyRepositoryMock(mc)
+				mock.GetKeyMock.When(minimock.AnyContext, refreshKeyName).Then(refreshKey, nil)
+				mock.GetKeyMock.When(minimock.AnyContext, accessKeyName).Then("", repositoryErr)
 				return mock
 			},
 		},

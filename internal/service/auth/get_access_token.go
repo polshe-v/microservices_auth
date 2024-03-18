@@ -17,17 +17,17 @@ func (s *serv) GetAccessToken(ctx context.Context, refreshToken string) (string,
 		return "", errors.New("failed to generate token")
 	}
 
-	claims, err := utils.VerifyToken(refreshToken, []byte(refreshTokenSecretKey))
-	if err != nil {
-		log.Print(err)
-		return "", errors.New("invalid refresh token")
-	}
-
 	// Get secret key from storage for access token HMAC
 	accessTokenSecretKey, err := s.keyRepository.GetKey(ctx, accessTokenSecretKeyName)
 	if err != nil {
 		log.Print(err)
 		return "", errors.New("failed to generate token")
+	}
+
+	claims, err := utils.VerifyToken(refreshToken, []byte(refreshTokenSecretKey))
+	if err != nil {
+		log.Print(err)
+		return "", errors.New("invalid refresh token")
 	}
 
 	accessToken, err := utils.GenerateToken(model.User{

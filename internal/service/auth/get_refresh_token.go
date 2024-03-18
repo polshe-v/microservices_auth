@@ -2,9 +2,8 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"log"
-
-	"github.com/pkg/errors"
 
 	"github.com/polshe-v/microservices_auth/internal/model"
 	"github.com/polshe-v/microservices_auth/internal/utils"

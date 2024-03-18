@@ -3,7 +3,7 @@ package utils
 import (
 	"time"
 
-	"github.com/golang-jwt/jwt"
+	jwt "github.com/golang-jwt/jwt/v5"
 	"github.com/pkg/errors"
 
 	"github.com/polshe-v/microservices_auth/internal/model"
@@ -12,8 +12,8 @@ import (
 // GenerateToken creates JWT for user.
 func GenerateToken(user model.User, secretKey []byte, duration time.Duration) (string, error) {
 	claims := model.UserClaims{
-		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(duration).Unix(),
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(duration)),
 		},
 		Username: user.Name,
 		Role:     user.Role,
