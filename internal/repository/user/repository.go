@@ -61,7 +61,7 @@ func (r *repo) Create(ctx context.Context, user *model.UserCreate) (int64, error
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
-			return 0, userService.ErrNameExists
+			return 0, userService.ErrUserExists
 		}
 		return 0, err
 	}

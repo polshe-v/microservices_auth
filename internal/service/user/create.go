@@ -12,8 +12,8 @@ import (
 	"github.com/polshe-v/microservices_auth/internal/model"
 )
 
-// ErrNameExists - custom error for user name duplicate.
-var ErrNameExists = errors.New("user with provided name already exists")
+// ErrUserExists - custom error for user name duplicate.
+var ErrUserExists = errors.New("user with provided name or email already exists")
 
 func (s *serv) Create(ctx context.Context, user *model.UserCreate) (int64, error) {
 	if user.Password != user.PasswordConfirm {
@@ -46,8 +46,8 @@ func (s *serv) Create(ctx context.Context, user *model.UserCreate) (int64, error
 
 	if err != nil {
 		log.Print(err)
-		if errorsExt.Cause(err) == ErrNameExists {
-			return 0, ErrNameExists
+		if errorsExt.Cause(err) == ErrUserExists {
+			return 0, ErrUserExists
 		}
 		return 0, errors.New("failed to create user")
 	}
