@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/gojuno/minimock/v3"
 	"github.com/stretchr/testify/require"
 
+	"github.com/polshe-v/microservices_auth/internal/model"
 	"github.com/polshe-v/microservices_auth/internal/repository"
 	repositoryMocks "github.com/polshe-v/microservices_auth/internal/repository/mocks"
 	authService "github.com/polshe-v/microservices_auth/internal/service/auth"
@@ -31,12 +33,31 @@ func TestGetRefreshToken(t *testing.T) {
 		ctx = context.Background()
 		mc  = minimock.NewController(t)
 
-		refreshKeyName = "refresh"
-		refreshToken   = "refresh_token"
+		refreshKeyName         = "refresh"
+		refreshKey             = "refresh_key"
+		refreshKeyBytes        = []byte("refresh_key")
+		refreshTokenExpiration = 60 * time.Minute
+		oldRefreshToken        = "old_refresh_token"
+		refreshToken           = "refresh_token"
 
-		repositoryErr = fmt.Errorf("failed to generate token")
+		username = "username"
+		role     = "USER"
 
-		req = refreshToken
+		claims = &model.UserClaims{
+			Username: username,
+			Role:     role,
+		}
+
+		user = model.User{
+			Name: username,
+			Role: role,
+		}
+
+		repositoryErr   = fmt.Errorf("failed to generate token")
+		tokenInvalidErr = fmt.Errorf("invalid refresh token")
+
+		req = oldRefreshToken
+		res = refreshToken
 	)
 
 	tests := []struct {
@@ -67,6 +88,77 @@ func TestGetRefreshToken(t *testing.T) {
 			},
 			tokenOperationsMock: func(mc *minimock.Controller) tokens.TokenOperations {
 				mock := tokenMocks.NewTokenOperationsMock(mc)
+				return mock
+			},
+		},
+		{
+			name: "token verify error case",
+			args: args{
+				ctx: ctx,
+				req: req,
+			},
+			want: "",
+			err:  tokenInvalidErr,
+			userRepositoryMock: func(mc *minimock.Controller) repository.UserRepository {
+				mock := repositoryMocks.NewUserRepositoryMock(mc)
+				return mock
+			},
+			keyRepositoryMock: func(mc *minimock.Controller) repository.KeyRepository {
+				mock := repositoryMocks.NewKeyRepositoryMock(mc)
+				mock.GetKeyMock.Expect(minimock.AnyContext, refreshKeyName).Return(refreshKey, nil)
+				return mock
+			},
+			tokenOperationsMock: func(mc *minimock.Controller) tokens.TokenOperations {
+				mock := tokenMocks.NewTokenOperationsMock(mc)
+				mock.VerifyMock.Expect(oldRefreshToken, refreshKeyBytes).Return(nil, tokenInvalidErr)
+				return mock
+			},
+		},
+		{
+			name: "token generate error case",
+			args: args{
+				ctx: ctx,
+				req: req,
+			},
+			want: "",
+			err:  repositoryErr,
+			userRepositoryMock: func(mc *minimock.Controller) repository.UserRepository {
+				mock := repositoryMocks.NewUserRepositoryMock(mc)
+				return mock
+			},
+			keyRepositoryMock: func(mc *minimock.Controller) repository.KeyRepository {
+				mock := repositoryMocks.NewKeyRepositoryMock(mc)
+				mock.GetKeyMock.Expect(minimock.AnyContext, refreshKeyName).Return(refreshKey, nil)
+				return mock
+			},
+			tokenOperationsMock: func(mc *minimock.Controller) tokens.TokenOperations {
+				mock := tokenMocks.NewTokenOperationsMock(mc)
+				mock.VerifyMock.Expect(oldRefreshToken, refreshKeyBytes).Return(claims, nil)
+				mock.GenerateMock.Expect(user, refreshKeyBytes, refreshTokenExpiration).Return("", repositoryErr)
+				return mock
+			},
+		},
+		{
+			name: "success case",
+			args: args{
+				ctx: ctx,
+				req: req,
+			},
+			want: res,
+			err:  nil,
+			userRepositoryMock: func(mc *minimock.Controller) repository.UserRepository {
+				mock := repositoryMocks.NewUserRepositoryMock(mc)
+				return mock
+			},
+			keyRepositoryMock: func(mc *minimock.Controller) repository.KeyRepository {
+				mock := repositoryMocks.NewKeyRepositoryMock(mc)
+				mock.GetKeyMock.Expect(minimock.AnyContext, refreshKeyName).Return(refreshKey, nil)
+				return mock
+			},
+			tokenOperationsMock: func(mc *minimock.Controller) tokens.TokenOperations {
+				mock := tokenMocks.NewTokenOperationsMock(mc)
+				mock.VerifyMock.Expect(oldRefreshToken, refreshKeyBytes).Return(claims, nil)
+				mock.GenerateMock.Expect(user, refreshKeyBytes, refreshTokenExpiration).Return(refreshToken, nil)
 				return mock
 			},
 		},

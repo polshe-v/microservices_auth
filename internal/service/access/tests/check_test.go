@@ -46,11 +46,15 @@ func TestCheck(t *testing.T) {
 		endpointSendMessage = "/chat_v1.ChatV1/SendMessage"
 		endpointNotExists   = "/chat_v1.ChatV1/NotExists"
 
+		username  = "username"
 		roleUser  = "USER"
 		roleAdmin = "ADMIN"
 
-		keyName = "access"
-		key     = "key"
+		accessKeyName  = "access"
+		accessKey      = "access_key"
+		accessKeyBytes = []byte("access_key")
+
+		accessToken = "access_token"
 
 		endpointPermissions = []*model.EndpointPermissions{
 			{
@@ -67,13 +71,25 @@ func TestCheck(t *testing.T) {
 			},
 		}
 
+		claimsAdmin = &model.UserClaims{
+			Username: username,
+			Role:     roleAdmin,
+		}
+
+		claimsUser = &model.UserClaims{
+			Username: username,
+			Role:     roleUser,
+		}
+
 		noMdErr          = fmt.Errorf("metadata is not provided")
 		noAuthHeaderErr  = fmt.Errorf("authorization header is not provided")
 		noAuthPrefixErr  = fmt.Errorf("invalid authorization header format")
 		keyRepositoryErr = fmt.Errorf("failed to generate token")
 		noEndpointErr    = fmt.Errorf("failed to find endpoint")
+		tokenInvalidErr  = fmt.Errorf("access token is invalid")
+		accessDeniedErr  = fmt.Errorf("access denied")
 
-		req = endpointNotExists
+		req = endpointCreate
 	)
 
 	tests := []struct {
@@ -153,7 +169,7 @@ func TestCheck(t *testing.T) {
 			err: keyRepositoryErr,
 			keyRepositoryMock: func(mc *minimock.Controller) repository.KeyRepository {
 				mock := repositoryMocks.NewKeyRepositoryMock(mc)
-				mock.GetKeyMock.Expect(minimock.AnyContext, keyName).Return("", keyRepositoryErr)
+				mock.GetKeyMock.Expect(minimock.AnyContext, accessKeyName).Return("", keyRepositoryErr)
 				return mock
 			},
 			accessRepositoryMock: func(mc *minimock.Controller) repository.AccessRepository {
@@ -169,12 +185,12 @@ func TestCheck(t *testing.T) {
 			name: "endpoint not found error case",
 			args: args{
 				ctx: ctx,
-				req: req,
+				req: endpointNotExists,
 			},
 			err: noEndpointErr,
 			keyRepositoryMock: func(mc *minimock.Controller) repository.KeyRepository {
 				mock := repositoryMocks.NewKeyRepositoryMock(mc)
-				mock.GetKeyMock.Expect(minimock.AnyContext, keyName).Return(key, nil)
+				mock.GetKeyMock.Expect(minimock.AnyContext, accessKeyName).Return(accessKey, nil)
 				return mock
 			},
 			accessRepositoryMock: func(mc *minimock.Controller) repository.AccessRepository {
@@ -187,13 +203,77 @@ func TestCheck(t *testing.T) {
 				return mock
 			},
 		},
+		{
+			name: "token verify error case",
+			args: args{
+				ctx: ctx,
+				req: req,
+			},
+			err: tokenInvalidErr,
+			keyRepositoryMock: func(mc *minimock.Controller) repository.KeyRepository {
+				mock := repositoryMocks.NewKeyRepositoryMock(mc)
+				mock.GetKeyMock.Expect(minimock.AnyContext, accessKeyName).Return(accessKey, nil)
+				return mock
+			},
+			accessRepositoryMock: func(mc *minimock.Controller) repository.AccessRepository {
+				mock := repositoryMocks.NewAccessRepositoryMock(mc)
+				return mock
+			},
+			tokenOperationsMock: func(mc *minimock.Controller) tokens.TokenOperations {
+				mock := tokenMocks.NewTokenOperationsMock(mc)
+				mock.VerifyMock.Expect(accessToken, accessKeyBytes).Return(nil, tokenInvalidErr)
+				return mock
+			},
+		},
+		{
+			name: "access denied error case",
+			args: args{
+				ctx: ctx,
+				req: req,
+			},
+			err: accessDeniedErr,
+			keyRepositoryMock: func(mc *minimock.Controller) repository.KeyRepository {
+				mock := repositoryMocks.NewKeyRepositoryMock(mc)
+				mock.GetKeyMock.Expect(minimock.AnyContext, accessKeyName).Return(accessKey, nil)
+				return mock
+			},
+			accessRepositoryMock: func(mc *minimock.Controller) repository.AccessRepository {
+				mock := repositoryMocks.NewAccessRepositoryMock(mc)
+				return mock
+			},
+			tokenOperationsMock: func(mc *minimock.Controller) tokens.TokenOperations {
+				mock := tokenMocks.NewTokenOperationsMock(mc)
+				mock.VerifyMock.Expect(accessToken, accessKeyBytes).Return(claimsUser, nil)
+				return mock
+			},
+		},
+		{
+			name: "success case",
+			args: args{
+				ctx: ctx,
+				req: req,
+			},
+			err: nil,
+			keyRepositoryMock: func(mc *minimock.Controller) repository.KeyRepository {
+				mock := repositoryMocks.NewKeyRepositoryMock(mc)
+				mock.GetKeyMock.Expect(minimock.AnyContext, accessKeyName).Return(accessKey, nil)
+				return mock
+			},
+			accessRepositoryMock: func(mc *minimock.Controller) repository.AccessRepository {
+				mock := repositoryMocks.NewAccessRepositoryMock(mc)
+				return mock
+			},
+			tokenOperationsMock: func(mc *minimock.Controller) tokens.TokenOperations {
+				mock := tokenMocks.NewTokenOperationsMock(mc)
+				mock.VerifyMock.Expect(accessToken, accessKeyBytes).Return(claimsAdmin, nil)
+				return mock
+			},
+		},
 	}
 
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
 			keyRepositoryMock := tt.keyRepositoryMock(mc)
 			accessRepositoryMock := tt.accessRepositoryMock(mc)
 			tokenOperationsMock := tt.tokenOperationsMock(mc)

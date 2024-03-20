@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/gojuno/minimock/v3"
 	"github.com/stretchr/testify/require"
@@ -40,14 +41,29 @@ func TestLogin(t *testing.T) {
 		ctx = context.Background()
 		mc  = minimock.NewController(t)
 
-		username      = "username"
-		passwordWrong = "passwordWrong"
-		role          = "USER"
-		keyName       = "refresh"
+		username               = "username"
+		passwordWrong          = "passwordWrong"
+		role                   = "USER"
+		refreshKeyName         = "refresh"
+		refreshKey             = "refresh_key"
+		refreshKeyBytes        = []byte("refresh_key")
+		refreshTokenExpiration = 60 * time.Minute
+		refreshToken           = "refresh_token"
 
 		keyRepositoryErr  = fmt.Errorf("failed to generate token")
 		userRepositoryErr = fmt.Errorf("user not found")
 		wrongPasswordErr  = fmt.Errorf("wrong password")
+
+		authInfo = &model.AuthInfo{
+			Username: username,
+			Password: string(hashedPassword),
+			Role:     role,
+		}
+
+		user = model.User{
+			Name: username,
+			Role: role,
+		}
 
 		req = &model.UserCreds{
 			Username: username,
@@ -59,11 +75,7 @@ func TestLogin(t *testing.T) {
 			Password: passwordWrong,
 		}
 
-		authInfo = &model.AuthInfo{
-			Username: username,
-			Password: string(hashedPassword),
-			Role:     role,
-		}
+		res = refreshToken
 	)
 
 	tests := []struct {
@@ -134,11 +146,59 @@ func TestLogin(t *testing.T) {
 			},
 			keyRepositoryMock: func(mc *minimock.Controller) repository.KeyRepository {
 				mock := repositoryMocks.NewKeyRepositoryMock(mc)
-				mock.GetKeyMock.Expect(minimock.AnyContext, keyName).Return("", keyRepositoryErr)
+				mock.GetKeyMock.Expect(minimock.AnyContext, refreshKeyName).Return("", keyRepositoryErr)
 				return mock
 			},
 			tokenOperationsMock: func(mc *minimock.Controller) tokens.TokenOperations {
 				mock := tokenMocks.NewTokenOperationsMock(mc)
+				return mock
+			},
+		},
+		{
+			name: "token generate error case",
+			args: args{
+				ctx: ctx,
+				req: req,
+			},
+			want: "",
+			err:  keyRepositoryErr,
+			userRepositoryMock: func(mc *minimock.Controller) repository.UserRepository {
+				mock := repositoryMocks.NewUserRepositoryMock(mc)
+				mock.GetAuthInfoMock.Expect(minimock.AnyContext, username).Return(authInfo, nil)
+				return mock
+			},
+			keyRepositoryMock: func(mc *minimock.Controller) repository.KeyRepository {
+				mock := repositoryMocks.NewKeyRepositoryMock(mc)
+				mock.GetKeyMock.Expect(minimock.AnyContext, refreshKeyName).Return(refreshKey, nil)
+				return mock
+			},
+			tokenOperationsMock: func(mc *minimock.Controller) tokens.TokenOperations {
+				mock := tokenMocks.NewTokenOperationsMock(mc)
+				mock.GenerateMock.Expect(user, refreshKeyBytes, refreshTokenExpiration).Return("", keyRepositoryErr)
+				return mock
+			},
+		},
+		{
+			name: "success case",
+			args: args{
+				ctx: ctx,
+				req: req,
+			},
+			want: res,
+			err:  nil,
+			userRepositoryMock: func(mc *minimock.Controller) repository.UserRepository {
+				mock := repositoryMocks.NewUserRepositoryMock(mc)
+				mock.GetAuthInfoMock.Expect(minimock.AnyContext, username).Return(authInfo, nil)
+				return mock
+			},
+			keyRepositoryMock: func(mc *minimock.Controller) repository.KeyRepository {
+				mock := repositoryMocks.NewKeyRepositoryMock(mc)
+				mock.GetKeyMock.Expect(minimock.AnyContext, refreshKeyName).Return(refreshKey, nil)
+				return mock
+			},
+			tokenOperationsMock: func(mc *minimock.Controller) tokens.TokenOperations {
+				mock := tokenMocks.NewTokenOperationsMock(mc)
+				mock.GenerateMock.Expect(user, refreshKeyBytes, refreshTokenExpiration).Return(refreshToken, nil)
 				return mock
 			},
 		},

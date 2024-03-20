@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/gojuno/minimock/v3"
 	"github.com/stretchr/testify/require"
 
+	"github.com/polshe-v/microservices_auth/internal/model"
 	"github.com/polshe-v/microservices_auth/internal/repository"
 	repositoryMocks "github.com/polshe-v/microservices_auth/internal/repository/mocks"
 	authService "github.com/polshe-v/microservices_auth/internal/service/auth"
@@ -31,14 +33,35 @@ func TestGetAccessToken(t *testing.T) {
 		ctx = context.Background()
 		mc  = minimock.NewController(t)
 
-		refreshKeyName = "refresh"
-		refreshKey     = "refresh_key"
-		refreshToken   = "refresh_token"
-		accessKeyName  = "access"
+		accessKeyName   = "access"
+		accessKey       = "access_key"
+		accessKeyBytes  = []byte("access_key")
+		refreshKeyName  = "refresh"
+		refreshKey      = "refresh_key"
+		refreshKeyBytes = []byte("refresh_key")
 
-		repositoryErr = fmt.Errorf("failed to generate token")
+		refreshToken          = "refresh_token"
+		accessToken           = "access_token"
+		accessTokenExpiration = 5 * time.Minute
+
+		username = "username"
+		role     = "USER"
+
+		claims = &model.UserClaims{
+			Username: username,
+			Role:     role,
+		}
+
+		user = model.User{
+			Name: username,
+			Role: role,
+		}
+
+		repositoryErr   = fmt.Errorf("failed to generate token")
+		tokenInvalidErr = fmt.Errorf("invalid refresh token")
 
 		req = refreshToken
+		res = accessToken
 	)
 
 	tests := []struct {
@@ -92,6 +115,80 @@ func TestGetAccessToken(t *testing.T) {
 			},
 			tokenOperationsMock: func(mc *minimock.Controller) tokens.TokenOperations {
 				mock := tokenMocks.NewTokenOperationsMock(mc)
+				return mock
+			},
+		},
+		{
+			name: "token verify error case",
+			args: args{
+				ctx: ctx,
+				req: req,
+			},
+			want: "",
+			err:  tokenInvalidErr,
+			userRepositoryMock: func(mc *minimock.Controller) repository.UserRepository {
+				mock := repositoryMocks.NewUserRepositoryMock(mc)
+				return mock
+			},
+			keyRepositoryMock: func(mc *minimock.Controller) repository.KeyRepository {
+				mock := repositoryMocks.NewKeyRepositoryMock(mc)
+				mock.GetKeyMock.When(minimock.AnyContext, refreshKeyName).Then(refreshKey, nil)
+				mock.GetKeyMock.When(minimock.AnyContext, accessKeyName).Then(accessKey, nil)
+				return mock
+			},
+			tokenOperationsMock: func(mc *minimock.Controller) tokens.TokenOperations {
+				mock := tokenMocks.NewTokenOperationsMock(mc)
+				mock.VerifyMock.Expect(refreshToken, refreshKeyBytes).Return(nil, tokenInvalidErr)
+				return mock
+			},
+		},
+		{
+			name: "token generate error case",
+			args: args{
+				ctx: ctx,
+				req: req,
+			},
+			want: "",
+			err:  repositoryErr,
+			userRepositoryMock: func(mc *minimock.Controller) repository.UserRepository {
+				mock := repositoryMocks.NewUserRepositoryMock(mc)
+				return mock
+			},
+			keyRepositoryMock: func(mc *minimock.Controller) repository.KeyRepository {
+				mock := repositoryMocks.NewKeyRepositoryMock(mc)
+				mock.GetKeyMock.When(minimock.AnyContext, refreshKeyName).Then(refreshKey, nil)
+				mock.GetKeyMock.When(minimock.AnyContext, accessKeyName).Then(accessKey, nil)
+				return mock
+			},
+			tokenOperationsMock: func(mc *minimock.Controller) tokens.TokenOperations {
+				mock := tokenMocks.NewTokenOperationsMock(mc)
+				mock.VerifyMock.Expect(refreshToken, refreshKeyBytes).Return(claims, nil)
+				mock.GenerateMock.Expect(user, accessKeyBytes, accessTokenExpiration).Return("", repositoryErr)
+				return mock
+			},
+		},
+		{
+			name: "success case",
+			args: args{
+				ctx: ctx,
+				req: req,
+			},
+			want: res,
+			err:  nil,
+			userRepositoryMock: func(mc *minimock.Controller) repository.UserRepository {
+				mock := repositoryMocks.NewUserRepositoryMock(mc)
+				return mock
+			},
+			keyRepositoryMock: func(mc *minimock.Controller) repository.KeyRepository {
+				mock := repositoryMocks.NewKeyRepositoryMock(mc)
+				mock.GetKeyMock.When(minimock.AnyContext, refreshKeyName).Then(refreshKey, nil)
+				mock.GetKeyMock.When(minimock.AnyContext, accessKeyName).Then(accessKey, nil)
+				return mock
+			},
+			tokenOperationsMock: func(mc *minimock.Controller) tokens.TokenOperations {
+				mock := tokenMocks.NewTokenOperationsMock(mc)
+				mock.VerifyMock.Expect(refreshToken, refreshKeyBytes).Return(claims, nil)
+				mock.GenerateMock.Expect(user, accessKeyBytes, accessTokenExpiration).Return(accessToken, nil)
 				return mock
 			},
 		},
