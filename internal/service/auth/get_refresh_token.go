@@ -6,7 +6,6 @@ import (
 	"log"
 
 	"github.com/polshe-v/microservices_auth/internal/model"
-	"github.com/polshe-v/microservices_auth/internal/utils"
 )
 
 func (s *serv) GetRefreshToken(ctx context.Context, oldRefreshToken string) (string, error) {
@@ -17,13 +16,13 @@ func (s *serv) GetRefreshToken(ctx context.Context, oldRefreshToken string) (str
 		return "", errors.New("failed to generate token")
 	}
 
-	claims, err := utils.VerifyToken(oldRefreshToken, []byte(refreshTokenSecretKey))
+	claims, err := s.tokenOperations.Verify(oldRefreshToken, []byte(refreshTokenSecretKey))
 	if err != nil {
 		log.Print(err)
 		return "", errors.New("invalid refresh token")
 	}
 
-	refreshToken, err := utils.GenerateToken(model.User{
+	refreshToken, err := s.tokenOperations.Generate(model.User{
 		Name: claims.Username,
 		Role: claims.Role,
 	},

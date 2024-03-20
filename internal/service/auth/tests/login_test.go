@@ -13,6 +13,8 @@ import (
 	"github.com/polshe-v/microservices_auth/internal/repository"
 	repositoryMocks "github.com/polshe-v/microservices_auth/internal/repository/mocks"
 	authService "github.com/polshe-v/microservices_auth/internal/service/auth"
+	"github.com/polshe-v/microservices_auth/internal/tokens"
+	tokenMocks "github.com/polshe-v/microservices_auth/internal/tokens/mocks"
 )
 
 func TestLogin(t *testing.T) {
@@ -20,6 +22,7 @@ func TestLogin(t *testing.T) {
 
 	type userRepositoryMockFunc func(mc *minimock.Controller) repository.UserRepository
 	type keyRepositoryMockFunc func(mc *minimock.Controller) repository.KeyRepository
+	type tokenOperationsMockFunc func(mc *minimock.Controller) tokens.TokenOperations
 
 	type args struct {
 		ctx context.Context
@@ -64,12 +67,13 @@ func TestLogin(t *testing.T) {
 	)
 
 	tests := []struct {
-		name               string
-		args               args
-		want               string
-		err                error
-		userRepositoryMock userRepositoryMockFunc
-		keyRepositoryMock  keyRepositoryMockFunc
+		name                string
+		args                args
+		want                string
+		err                 error
+		userRepositoryMock  userRepositoryMockFunc
+		keyRepositoryMock   keyRepositoryMockFunc
+		tokenOperationsMock tokenOperationsMockFunc
 	}{
 		{
 			name: "user repository error case",
@@ -88,6 +92,10 @@ func TestLogin(t *testing.T) {
 				mock := repositoryMocks.NewKeyRepositoryMock(mc)
 				return mock
 			},
+			tokenOperationsMock: func(mc *minimock.Controller) tokens.TokenOperations {
+				mock := tokenMocks.NewTokenOperationsMock(mc)
+				return mock
+			},
 		},
 		{
 			name: "wrong password error case",
@@ -104,6 +112,10 @@ func TestLogin(t *testing.T) {
 			},
 			keyRepositoryMock: func(mc *minimock.Controller) repository.KeyRepository {
 				mock := repositoryMocks.NewKeyRepositoryMock(mc)
+				return mock
+			},
+			tokenOperationsMock: func(mc *minimock.Controller) tokens.TokenOperations {
+				mock := tokenMocks.NewTokenOperationsMock(mc)
 				return mock
 			},
 		},
@@ -125,6 +137,10 @@ func TestLogin(t *testing.T) {
 				mock.GetKeyMock.Expect(minimock.AnyContext, keyName).Return("", keyRepositoryErr)
 				return mock
 			},
+			tokenOperationsMock: func(mc *minimock.Controller) tokens.TokenOperations {
+				mock := tokenMocks.NewTokenOperationsMock(mc)
+				return mock
+			},
 		},
 	}
 
@@ -135,7 +151,8 @@ func TestLogin(t *testing.T) {
 
 			userRepositoryMock := tt.userRepositoryMock(mc)
 			keyRepositoryMock := tt.keyRepositoryMock(mc)
-			srv := authService.NewService(userRepositoryMock, keyRepositoryMock)
+			tokenOperationsMock := tt.tokenOperationsMock(mc)
+			srv := authService.NewService(userRepositoryMock, keyRepositoryMock, tokenOperationsMock)
 
 			res, err := srv.Login(tt.args.ctx, tt.args.req)
 			require.Equal(t, tt.err, err)

@@ -13,6 +13,8 @@ import (
 	"github.com/polshe-v/microservices_auth/internal/repository"
 	repositoryMocks "github.com/polshe-v/microservices_auth/internal/repository/mocks"
 	accessService "github.com/polshe-v/microservices_auth/internal/service/access"
+	"github.com/polshe-v/microservices_auth/internal/tokens"
+	tokenMocks "github.com/polshe-v/microservices_auth/internal/tokens/mocks"
 )
 
 func TestCheck(t *testing.T) {
@@ -20,6 +22,7 @@ func TestCheck(t *testing.T) {
 
 	type keyRepositoryMockFunc func(mc *minimock.Controller) repository.KeyRepository
 	type accessRepositoryMockFunc func(mc *minimock.Controller) repository.AccessRepository
+	type tokenOperationsMockFunc func(mc *minimock.Controller) tokens.TokenOperations
 
 	type args struct {
 		ctx context.Context
@@ -79,6 +82,7 @@ func TestCheck(t *testing.T) {
 		err                  error
 		keyRepositoryMock    keyRepositoryMockFunc
 		accessRepositoryMock accessRepositoryMockFunc
+		tokenOperationsMock  tokenOperationsMockFunc
 	}{
 		{
 			name: "metadata not provided error case",
@@ -93,6 +97,10 @@ func TestCheck(t *testing.T) {
 			},
 			accessRepositoryMock: func(mc *minimock.Controller) repository.AccessRepository {
 				mock := repositoryMocks.NewAccessRepositoryMock(mc)
+				return mock
+			},
+			tokenOperationsMock: func(mc *minimock.Controller) tokens.TokenOperations {
+				mock := tokenMocks.NewTokenOperationsMock(mc)
 				return mock
 			},
 		},
@@ -111,6 +119,10 @@ func TestCheck(t *testing.T) {
 				mock := repositoryMocks.NewAccessRepositoryMock(mc)
 				return mock
 			},
+			tokenOperationsMock: func(mc *minimock.Controller) tokens.TokenOperations {
+				mock := tokenMocks.NewTokenOperationsMock(mc)
+				return mock
+			},
 		},
 		{
 			name: "authorization header format error case",
@@ -125,6 +137,10 @@ func TestCheck(t *testing.T) {
 			},
 			accessRepositoryMock: func(mc *minimock.Controller) repository.AccessRepository {
 				mock := repositoryMocks.NewAccessRepositoryMock(mc)
+				return mock
+			},
+			tokenOperationsMock: func(mc *minimock.Controller) tokens.TokenOperations {
+				mock := tokenMocks.NewTokenOperationsMock(mc)
 				return mock
 			},
 		},
@@ -142,6 +158,10 @@ func TestCheck(t *testing.T) {
 			},
 			accessRepositoryMock: func(mc *minimock.Controller) repository.AccessRepository {
 				mock := repositoryMocks.NewAccessRepositoryMock(mc)
+				return mock
+			},
+			tokenOperationsMock: func(mc *minimock.Controller) tokens.TokenOperations {
+				mock := tokenMocks.NewTokenOperationsMock(mc)
 				return mock
 			},
 		},
@@ -162,6 +182,10 @@ func TestCheck(t *testing.T) {
 				mock.GetRoleEndpointsMock.Expect(minimock.AnyContext).Return(endpointPermissions, nil)
 				return mock
 			},
+			tokenOperationsMock: func(mc *minimock.Controller) tokens.TokenOperations {
+				mock := tokenMocks.NewTokenOperationsMock(mc)
+				return mock
+			},
 		},
 	}
 
@@ -172,7 +196,8 @@ func TestCheck(t *testing.T) {
 
 			keyRepositoryMock := tt.keyRepositoryMock(mc)
 			accessRepositoryMock := tt.accessRepositoryMock(mc)
-			srv := accessService.NewService(accessRepositoryMock, keyRepositoryMock)
+			tokenOperationsMock := tt.tokenOperationsMock(mc)
+			srv := accessService.NewService(accessRepositoryMock, keyRepositoryMock, tokenOperationsMock)
 
 			err := srv.Check(tt.args.ctx, tt.args.req)
 			require.Equal(t, tt.err, err)

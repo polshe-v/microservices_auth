@@ -11,6 +11,8 @@ import (
 	"github.com/polshe-v/microservices_auth/internal/repository"
 	repositoryMocks "github.com/polshe-v/microservices_auth/internal/repository/mocks"
 	authService "github.com/polshe-v/microservices_auth/internal/service/auth"
+	"github.com/polshe-v/microservices_auth/internal/tokens"
+	tokenMocks "github.com/polshe-v/microservices_auth/internal/tokens/mocks"
 )
 
 func TestGetRefreshToken(t *testing.T) {
@@ -18,6 +20,7 @@ func TestGetRefreshToken(t *testing.T) {
 
 	type userRepositoryMockFunc func(mc *minimock.Controller) repository.UserRepository
 	type keyRepositoryMockFunc func(mc *minimock.Controller) repository.KeyRepository
+	type tokenOperationsMockFunc func(mc *minimock.Controller) tokens.TokenOperations
 
 	type args struct {
 		ctx context.Context
@@ -37,12 +40,13 @@ func TestGetRefreshToken(t *testing.T) {
 	)
 
 	tests := []struct {
-		name               string
-		args               args
-		want               string
-		err                error
-		userRepositoryMock userRepositoryMockFunc
-		keyRepositoryMock  keyRepositoryMockFunc
+		name                string
+		args                args
+		want                string
+		err                 error
+		userRepositoryMock  userRepositoryMockFunc
+		keyRepositoryMock   keyRepositoryMockFunc
+		tokenOperationsMock tokenOperationsMockFunc
 	}{
 		{
 			name: "refresh key repository error case",
@@ -61,6 +65,10 @@ func TestGetRefreshToken(t *testing.T) {
 				mock.GetKeyMock.Expect(minimock.AnyContext, refreshKeyName).Return("", repositoryErr)
 				return mock
 			},
+			tokenOperationsMock: func(mc *minimock.Controller) tokens.TokenOperations {
+				mock := tokenMocks.NewTokenOperationsMock(mc)
+				return mock
+			},
 		},
 	}
 
@@ -71,7 +79,8 @@ func TestGetRefreshToken(t *testing.T) {
 
 			userRepositoryMock := tt.userRepositoryMock(mc)
 			keyRepositoryMock := tt.keyRepositoryMock(mc)
-			srv := authService.NewService(userRepositoryMock, keyRepositoryMock)
+			tokenOperationsMock := tt.tokenOperationsMock(mc)
+			srv := authService.NewService(userRepositoryMock, keyRepositoryMock, tokenOperationsMock)
 
 			res, err := srv.GetRefreshToken(tt.args.ctx, tt.args.req)
 			require.Equal(t, tt.err, err)

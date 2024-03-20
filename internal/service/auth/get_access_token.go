@@ -6,7 +6,6 @@ import (
 	"log"
 
 	"github.com/polshe-v/microservices_auth/internal/model"
-	"github.com/polshe-v/microservices_auth/internal/utils"
 )
 
 func (s *serv) GetAccessToken(ctx context.Context, refreshToken string) (string, error) {
@@ -24,13 +23,13 @@ func (s *serv) GetAccessToken(ctx context.Context, refreshToken string) (string,
 		return "", errors.New("failed to generate token")
 	}
 
-	claims, err := utils.VerifyToken(refreshToken, []byte(refreshTokenSecretKey))
+	claims, err := s.tokenOperations.Verify(refreshToken, []byte(refreshTokenSecretKey))
 	if err != nil {
 		log.Print(err)
 		return "", errors.New("invalid refresh token")
 	}
 
-	accessToken, err := utils.GenerateToken(model.User{
+	accessToken, err := s.tokenOperations.Generate(model.User{
 		Name: claims.Username,
 		Role: claims.Role,
 	},

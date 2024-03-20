@@ -102,6 +102,7 @@ vendor-proto:
 generate-mocks:
 	go generate ./internal/repository
 	go generate ./internal/service
+	go generate ./internal/tokens
 
 generate-cert: $(TLS_PATH)/ca.key $(TLS_PATH)/ca.pem
 	openssl genrsa -out $(TLS_PATH)/auth.key 4096

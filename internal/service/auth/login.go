@@ -5,8 +5,9 @@ import (
 	"errors"
 	"log"
 
+	"golang.org/x/crypto/bcrypt"
+
 	"github.com/polshe-v/microservices_auth/internal/model"
-	"github.com/polshe-v/microservices_auth/internal/utils"
 )
 
 func (s *serv) Login(ctx context.Context, creds *model.UserCreds) (string, error) {
@@ -17,7 +18,8 @@ func (s *serv) Login(ctx context.Context, creds *model.UserCreds) (string, error
 		return "", errors.New("user not found")
 	}
 
-	if !utils.VerifyPassword(authInfo.Password, creds.Password) {
+	err = bcrypt.CompareHashAndPassword([]byte(authInfo.Password), []byte(creds.Password))
+	if err != nil {
 		log.Print(err)
 		return "", errors.New("wrong password")
 	}
@@ -29,7 +31,7 @@ func (s *serv) Login(ctx context.Context, creds *model.UserCreds) (string, error
 		return "", errors.New("failed to generate token")
 	}
 
-	refreshToken, err := utils.GenerateToken(model.User{
+	refreshToken, err := s.tokenOperations.Generate(model.User{
 		Name: authInfo.Username,
 		Role: authInfo.Role,
 	},

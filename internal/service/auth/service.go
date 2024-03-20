@@ -5,6 +5,7 @@ import (
 
 	"github.com/polshe-v/microservices_auth/internal/repository"
 	"github.com/polshe-v/microservices_auth/internal/service"
+	"github.com/polshe-v/microservices_auth/internal/tokens"
 )
 
 const (
@@ -15,14 +16,16 @@ const (
 )
 
 type serv struct {
-	userRepository repository.UserRepository
-	keyRepository  repository.KeyRepository
+	userRepository  repository.UserRepository
+	keyRepository   repository.KeyRepository
+	tokenOperations tokens.TokenOperations
 }
 
 // NewService creates new object of service layer.
-func NewService(userRepository repository.UserRepository, keyRepository repository.KeyRepository) service.AuthService {
+func NewService(userRepository repository.UserRepository, keyRepository repository.KeyRepository, tokenOperations tokens.TokenOperations) service.AuthService {
 	return &serv{
-		userRepository: userRepository,
-		keyRepository:  keyRepository,
+		userRepository:  userRepository,
+		keyRepository:   keyRepository,
+		tokenOperations: tokenOperations,
 	}
 }

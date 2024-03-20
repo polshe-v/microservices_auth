@@ -10,7 +10,6 @@ import (
 	"google.golang.org/grpc/metadata"
 
 	"github.com/polshe-v/microservices_auth/internal/converter"
-	"github.com/polshe-v/microservices_auth/internal/utils"
 )
 
 const (
@@ -61,7 +60,7 @@ func (s *serv) Check(ctx context.Context, endpoint string) error {
 		return errors.New("failed to find endpoint")
 	}
 
-	claims, err := utils.VerifyToken(accessToken, []byte(accessTokenSecretKey))
+	claims, err := s.tokenOperations.Verify(accessToken, []byte(accessTokenSecretKey))
 	if err != nil {
 		return errors.New("access token is invalid")
 	}

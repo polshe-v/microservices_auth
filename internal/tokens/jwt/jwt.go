@@ -1,4 +1,4 @@
-package utils
+package jwt
 
 import (
 	"time"
@@ -7,10 +7,20 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/polshe-v/microservices_auth/internal/model"
+	"github.com/polshe-v/microservices_auth/internal/tokens"
 )
 
-// GenerateToken creates JWT for user.
-func GenerateToken(user model.User, secretKey []byte, duration time.Duration) (string, error) {
+type tokenOperations struct{}
+
+var _ tokens.TokenOperations = (*tokenOperations)(nil)
+
+// NewTokenOperations creates new object for using token functions.
+func NewTokenOperations() tokens.TokenOperations {
+	return &tokenOperations{}
+}
+
+// Generate creates JWT for user.
+func (t *tokenOperations) Generate(user model.User, secretKey []byte, duration time.Duration) (string, error) {
 	claims := model.UserClaims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(duration)),
@@ -24,8 +34,8 @@ func GenerateToken(user model.User, secretKey []byte, duration time.Duration) (s
 	return token.SignedString(secretKey)
 }
 
-// VerifyToken checks validity of provided JWT.
-func VerifyToken(tokenStr string, secretKey []byte) (*model.UserClaims, error) {
+// Verify checks validity of provided JWT.
+func (t *tokenOperations) Verify(tokenStr string, secretKey []byte) (*model.UserClaims, error) {
 	token, err := jwt.ParseWithClaims(
 		tokenStr,
 		&model.UserClaims{},

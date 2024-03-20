@@ -18,6 +18,8 @@ import (
 	accessService "github.com/polshe-v/microservices_auth/internal/service/access"
 	authService "github.com/polshe-v/microservices_auth/internal/service/auth"
 	userService "github.com/polshe-v/microservices_auth/internal/service/user"
+	"github.com/polshe-v/microservices_auth/internal/tokens"
+	"github.com/polshe-v/microservices_auth/internal/tokens/jwt"
 	"github.com/polshe-v/microservices_common/pkg/closer"
 	"github.com/polshe-v/microservices_common/pkg/db"
 	"github.com/polshe-v/microservices_common/pkg/db/pg"
@@ -43,6 +45,8 @@ type serviceProvider struct {
 	userImpl         *user.Implementation
 	authImpl         *auth.Implementation
 	accessImpl       *access.Implementation
+
+	tokenOperations tokens.TokenOperations
 }
 
 func newServiceProvider() *serviceProvider {
@@ -165,14 +169,14 @@ func (s *serviceProvider) UserService(ctx context.Context) service.UserService {
 
 func (s *serviceProvider) AuthService(ctx context.Context) service.AuthService {
 	if s.authService == nil {
-		s.authService = authService.NewService(s.UserRepository(ctx), s.KeyRepository(ctx))
+		s.authService = authService.NewService(s.UserRepository(ctx), s.KeyRepository(ctx), s.TokenOperations(ctx))
 	}
 	return s.authService
 }
 
 func (s *serviceProvider) AccessService(ctx context.Context) service.AccessService {
 	if s.accessService == nil {
-		s.accessService = accessService.NewService(s.AccessRepository(ctx), s.KeyRepository(ctx))
+		s.accessService = accessService.NewService(s.AccessRepository(ctx), s.KeyRepository(ctx), s.TokenOperations(ctx))
 	}
 	return s.accessService
 }
@@ -196,4 +200,11 @@ func (s *serviceProvider) AccessImpl(ctx context.Context) *access.Implementation
 		s.accessImpl = access.NewImplementation(s.AccessService(ctx))
 	}
 	return s.accessImpl
+}
+
+func (s *serviceProvider) TokenOperations(_ context.Context) tokens.TokenOperations {
+	if s.tokenOperations == nil {
+		s.tokenOperations = jwt.NewTokenOperations()
+	}
+	return s.tokenOperations
 }
