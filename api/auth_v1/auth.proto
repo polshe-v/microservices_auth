@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+package auth_v1;
+
+option go_package = "github.com/polshe-v/microservices_auth/pkg/auth_v1;auth_v1";
+
+service AuthV1 {
+	// Login gives refresh token based on user credentials.
+	rpc Login (LoginRequest) returns (LoginResponse);
+	// GetRefreshToken updates refresh token.
+	rpc GetRefreshToken (GetRefreshTokenRequest) returns (GetRefreshTokenResponse);
+	// GetAccessToken gives access token based on refresh token for operating with service.
+	rpc GetAccessToken (GetAccessTokenRequest) returns (GetAccessTokenResponse);
+}
+
+message LoginRequest {
+	Creds creds = 1;
+}
+
+message Creds {
+	// Name of the user.
+	string username = 1;
+	// Password of the user.
+	string password = 2;
+}
+
+message LoginResponse {
+	// User's refresh token used to obtain access token.
+	string refresh_token = 1;
+}
+
+message GetRefreshTokenRequest {
+	// User's refresh token to obtain new refresh token.
+	string old_refresh_token = 1;
+}
+
+message GetRefreshTokenResponse {
+	// User's new refresh token.
+	string refresh_token = 1;
+}
+
+message GetAccessTokenRequest {
+	// User's refresh token used to obtain access token.
+	string refresh_token = 1;
+}
+
+message GetAccessTokenResponse {
+	// User's access token for operating with service.
+	string access_token = 1;
+}

@@ -42,10 +42,19 @@ func TestCreate(t *testing.T) {
 		role            = "USER"
 
 		repositoryErr = fmt.Errorf("failed to create user")
+		passwordsErr  = fmt.Errorf("passwords don't match")
 
 		opts = pgx.TxOptions{IsoLevel: pgx.ReadCommitted}
 
 		req = &model.UserCreate{
+			Name:            name,
+			Email:           email,
+			Password:        password,
+			PasswordConfirm: password,
+			Role:            role,
+		}
+
+		reqPassNotMatch = &model.UserCreate{
 			Name:            name,
 			Email:           email,
 			Password:        password,
@@ -90,6 +99,27 @@ func TestCreate(t *testing.T) {
 				txMock := dbMocks.NewTxMock(mc)
 				mock.BeginTxMock.Expect(minimock.AnyContext, opts).Return(txMock, nil)
 				txMock.CommitMock.Expect(minimock.AnyContext).Return(nil)
+				return mock
+			},
+		},
+		{
+			name: "passwords match error case",
+			args: args{
+				ctx: ctx,
+				req: reqPassNotMatch,
+			},
+			want: 0,
+			err:  passwordsErr,
+			userRepositoryMock: func(mc *minimock.Controller) repository.UserRepository {
+				mock := repositoryMocks.NewUserRepositoryMock(mc)
+				return mock
+			},
+			logRepositoryMock: func(mc *minimock.Controller) repository.LogRepository {
+				mock := repositoryMocks.NewLogRepositoryMock(mc)
+				return mock
+			},
+			transactorMock: func(mc *minimock.Controller) db.Transactor {
+				mock := dbMocks.NewTransactorMock(mc)
 				return mock
 			},
 		},

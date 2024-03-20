@@ -28,3 +28,6 @@ coverage.*
 
 # Directory with vendor proto declarations
 /vendor.protogen/
+
+# Certificates and private keys
+/tls/

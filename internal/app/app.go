@@ -14,12 +14,14 @@ import (
 	"github.com/rakyll/statik/fs"
 	"github.com/rs/cors"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/reflection"
 
 	"github.com/polshe-v/microservices_auth/internal/config"
 	"github.com/polshe-v/microservices_auth/internal/interceptor"
-	desc "github.com/polshe-v/microservices_auth/pkg/user_v1"
+	descAccess "github.com/polshe-v/microservices_auth/pkg/access_v1"
+	descAuth "github.com/polshe-v/microservices_auth/pkg/auth_v1"
+	descUser "github.com/polshe-v/microservices_auth/pkg/user_v1"
 	_ "github.com/polshe-v/microservices_auth/statik" // Not used for importing, only init() needed.
 	"github.com/polshe-v/microservices_common/pkg/closer"
 )
@@ -125,8 +127,14 @@ func (a *App) initServiceProvider(_ context.Context) error {
 }
 
 func (a *App) initGrpcServer(ctx context.Context) error {
+	cfg := a.serviceProvider.GrpcConfig()
+	creds, err := credentials.NewServerTLSFromFile(cfg.CertPath(), cfg.KeyPath())
+	if err != nil {
+		return err
+	}
+
 	a.grpcServer = grpc.NewServer(
-		grpc.Creds(insecure.NewCredentials()),
+		grpc.Creds(creds),
 		grpc.UnaryInterceptor(interceptor.ValidateInterceptor),
 	)
 
@@ -134,19 +142,26 @@ func (a *App) initGrpcServer(ctx context.Context) error {
 	reflection.Register(a.grpcServer)
 
 	// Register service with corresponded interface.
-	desc.RegisterUserV1Server(a.grpcServer, a.serviceProvider.UserImpl(ctx))
+	descUser.RegisterUserV1Server(a.grpcServer, a.serviceProvider.UserImpl(ctx))
+	descAuth.RegisterAuthV1Server(a.grpcServer, a.serviceProvider.AuthImpl(ctx))
+	descAccess.RegisterAccessV1Server(a.grpcServer, a.serviceProvider.AccessImpl(ctx))
 
 	return nil
 }
 
 func (a *App) initHTTPServer(ctx context.Context) error {
-	mux := runtime.NewServeMux()
-
-	opts := []grpc.DialOption{
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	cfg := a.serviceProvider.GrpcConfig()
+	creds, err := credentials.NewClientTLSFromFile(cfg.CertPath(), "")
+	if err != nil {
+		return err
 	}
 
-	err := desc.RegisterUserV1HandlerFromEndpoint(ctx, mux, a.serviceProvider.GrpcConfig().Address(), opts)
+	opts := []grpc.DialOption{
+		grpc.WithTransportCredentials(creds),
+	}
+
+	mux := runtime.NewServeMux()
+	err = descUser.RegisterUserV1HandlerFromEndpoint(ctx, mux, cfg.Address(), opts)
 	if err != nil {
 		return err
 	}

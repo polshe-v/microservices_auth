@@ -7,6 +7,7 @@ BINARY_NAME=main
 CONFIG=$(ENV).env
 LOCAL_MIGRATION_DIR=$(MIGRATION_DIR)
 LOCAL_MIGRATION_DSN="host=localhost port=$(POSTGRES_PORT_LOCAL) dbname=$(POSTGRES_DB) user=$(POSTGRES_USER) password=$(POSTGRES_PASSWORD) sslmode=disable"
+TLS_PATH=tls
 TESTS_PATH=github.com/polshe-v/microservices_auth/internal/service/...,github.com/polshe-v/microservices_auth/internal/api/...
 TESTS_ATTEMPTS=5
 TESTS_COVERAGE_FILE=coverage.out
@@ -26,7 +27,6 @@ install-deps:
 	GOBIN=$(LOCAL_BIN) go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@v2.19.1
 	GOBIN=$(LOCAL_BIN) go install github.com/rakyll/statik@v0.1.7
 
-
 get-protoc-deps:
 	go get -u google.golang.org/protobuf/cmd/protoc-gen-go
 	go get -u google.golang.org/grpc/cmd/protoc-gen-go-grpc
@@ -35,11 +35,16 @@ lint:
 	GOBIN=$(LOCAL_BIN) $(LOCAL_BIN)/golangci-lint run ./... --config .golangci.pipeline.yaml
 
 generate-api:
+	make generate-user-api
+	make generate-auth-api
+	make generate-access-api
+
+generate-user-api:
 	mkdir -p pkg/swagger
 	make generate-api-v1
 	$(LOCAL_BIN)/statik -src=pkg/swagger/ -include='*.css,*.html,*.js,*.json,*.png'
 
-generate-api-v1: check-env
+generate-user-api-v1: check-env
 	mkdir -p pkg/user_v1
 	protoc --proto_path api/user_v1 --proto_path vendor.protogen \
 	--go_out=pkg/user_v1 --go_opt=paths=source_relative \
@@ -55,6 +60,24 @@ generate-api-v1: check-env
 	api/user_v1/user.proto
 	sed -i -e 's/{HTTP_HOST}/$(HTTP_HOST)/g' pkg/swagger/api.swagger.json
 	sed -i -e 's/{HTTP_PORT}/$(HTTP_PORT)/g' pkg/swagger/api.swagger.json
+
+generate-auth-api:
+	mkdir -p pkg/auth_v1
+	protoc --proto_path api/auth_v1 \
+	--go_out=pkg/auth_v1 --go_opt=paths=source_relative \
+	--plugin=protoc-gen-go=$(LOCAL_BIN)/protoc-gen-go \
+	--go-grpc_out=pkg/auth_v1 --go-grpc_opt=paths=source_relative \
+	--plugin=protoc-gen-go-grpc=$(LOCAL_BIN)/protoc-gen-go-grpc \
+	api/auth_v1/auth.proto
+
+generate-access-api:
+	mkdir -p pkg/access_v1
+	protoc --proto_path api/access_v1 \
+	--go_out=pkg/access_v1 --go_opt=paths=source_relative \
+	--plugin=protoc-gen-go=$(LOCAL_BIN)/protoc-gen-go \
+	--go-grpc_out=pkg/access_v1 --go-grpc_opt=paths=source_relative \
+	--plugin=protoc-gen-go-grpc=$(LOCAL_BIN)/protoc-gen-go-grpc \
+	api/access_v1/access.proto
 
 vendor-proto:
 		@if [ ! -d vendor.protogen/validate ]; then \
@@ -79,6 +102,22 @@ vendor-proto:
 generate-mocks:
 	go generate ./internal/repository
 	go generate ./internal/service
+	go generate ./internal/tokens
+
+generate-cert: $(TLS_PATH)/ca.key $(TLS_PATH)/ca.pem
+	openssl genrsa -out $(TLS_PATH)/auth.key 4096
+	openssl req -new -key $(TLS_PATH)/auth.key -config openssl.cnf -out $(TLS_PATH)/auth.csr
+	openssl x509 -req -in $(TLS_PATH)/auth.csr -CA $(TLS_PATH)/ca.pem -CAkey $(TLS_PATH)/ca.key -extfile openssl.cnf -extensions req_ext -out $(TLS_PATH)/auth.pem -days 365 -sha256
+	rm -rf $(TLS_PATH)/auth.csr
+
+check-env:
+ifeq ($(ENV),)
+	$(error No environment specified)
+endif
+
+# ##### #
+# TESTS #
+# ##### #
 
 test:
 	go clean -testcache
@@ -91,11 +130,6 @@ test-coverage:
 	rm $(TESTS_COVERAGE_FILE).tmp
 	go tool cover -html=$(TESTS_COVERAGE_FILE) -o coverage.html
 	go tool cover -func=$(TESTS_COVERAGE_FILE) | grep "total"
-
-check-env:
-ifeq ($(ENV),)
-	$(error No environment specified)
-endif
 
 # ##### #
 # BUILD #
