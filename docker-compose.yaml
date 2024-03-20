@@ -13,6 +13,8 @@ services:
       - "${GRPC_PORT}:${GRPC_PORT}"
       - "${HTTP_PORT}:${HTTP_PORT}"
       - "${SWAGGER_PORT}:${SWAGGER_PORT}"
+    networks:
+      - service-network
     depends_on:
       db-auth:
         condition: service_healthy
@@ -25,6 +27,8 @@ services:
       - ${ENV}.env
     ports:
       - "${POSTGRES_PORT_LOCAL}:5432"
+    networks:
+      - service-network
     volumes:
       - postgres_volume:/var/lib/postgresql/data
     healthcheck:
@@ -38,6 +42,12 @@ services:
     restart: on-failure
     environment:
       DB_HOST: db-auth
+    networks:
+      - service-network
     depends_on:
       db-auth:
         condition: service_healthy
+networks:
+  service-network:
+    name: service-net
+    external: true
