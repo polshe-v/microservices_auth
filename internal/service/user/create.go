@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 
 	errorsExt "github.com/pkg/errors"
 	"golang.org/x/crypto/bcrypt"
@@ -45,7 +44,6 @@ func (s *serv) Create(ctx context.Context, user *model.UserCreate) (int64, error
 	})
 
 	if err != nil {
-		log.Print(err)
 		if errorsExt.Cause(err) == ErrUserExists {
 			return 0, ErrUserExists
 		}

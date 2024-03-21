@@ -3,7 +3,6 @@ package access
 import (
 	"context"
 	"errors"
-	"log"
 	"slices"
 	"strings"
 
@@ -40,14 +39,12 @@ func (s *serv) Check(ctx context.Context, endpoint string) error {
 	// Get secret key from storage for access token HMAC
 	accessTokenSecretKey, err := s.keyRepository.GetKey(ctx, accessTokenSecretKeyName)
 	if err != nil {
-		log.Print(err)
 		return errors.New("failed to generate token")
 	}
 
 	if accessibleRoles == nil {
 		endpointPermissions, errRepo := s.accessRepository.GetRoleEndpoints(ctx)
 		if errRepo != nil {
-			log.Print(errRepo)
 			return errors.New("failed to read access policy")
 		}
 		accessibleRoles = converter.ToEndpointPermissionsMap(endpointPermissions)
@@ -56,7 +53,6 @@ func (s *serv) Check(ctx context.Context, endpoint string) error {
 	// Read slice of roles allowed to use the endpoint
 	roles, ok := accessibleRoles[endpoint]
 	if !ok {
-		log.Print(err)
 		return errors.New("failed to find endpoint")
 	}
 

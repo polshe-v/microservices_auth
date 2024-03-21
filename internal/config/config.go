@@ -28,6 +28,17 @@ type PgConfig interface {
 	DSN() string
 }
 
+// LogConfig provides log settings from config file.
+type LogConfig interface {
+	LogDirectory() string
+	LogFilename() string
+	LogFilePath() string
+	LogMaxSize() int
+	LogMaxFiles() int
+	LogMaxAge() int
+	LogLevel() string
+}
+
 // Load reads .env config file.
 func Load(path string) error {
 	err := godotenv.Load(path)

@@ -3,7 +3,6 @@ package auth
 import (
 	"context"
 	"errors"
-	"log"
 
 	"github.com/polshe-v/microservices_auth/internal/model"
 )
@@ -12,13 +11,11 @@ func (s *serv) GetRefreshToken(ctx context.Context, oldRefreshToken string) (str
 	// Get secret key from storage for refresh token HMAC
 	refreshTokenSecretKey, err := s.keyRepository.GetKey(ctx, refreshTokenSecretKeyName)
 	if err != nil {
-		log.Print(err)
 		return "", errors.New("failed to generate token")
 	}
 
 	claims, err := s.tokenOperations.Verify(oldRefreshToken, []byte(refreshTokenSecretKey))
 	if err != nil {
-		log.Print(err)
 		return "", errors.New("invalid refresh token")
 	}
 
@@ -30,7 +27,6 @@ func (s *serv) GetRefreshToken(ctx context.Context, oldRefreshToken string) (str
 		refreshTokenExpiration,
 	)
 	if err != nil {
-		log.Print(err)
 		return "", errors.New("failed to generate token")
 	}
 

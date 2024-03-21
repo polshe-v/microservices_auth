@@ -17,17 +17,18 @@ COPY . .
 
 RUN go mod download && go mod verify
 RUN make build-app ENV=${ENV}
-RUN chown -R auth:auth ./
+RUN mkdir logs/
 
 FROM scratch
 ARG CONFIG
 
 WORKDIR /opt/app/
-COPY --from=builder /opt/app/bin/main .
 COPY --from=builder /etc/passwd /etc/passwd
 COPY --from=builder /etc/group /etc/group
-COPY --from=builder /opt/app/${CONFIG} ./config
-COPY --from=builder /opt/app/tls/ ./tls/
+COPY --from=builder --chown=auth:auth /opt/app/bin/main .
+COPY --from=builder --chown=auth:auth /opt/app/${CONFIG} ./config
+COPY --from=builder --chown=auth:auth /opt/app/tls/ ./tls/
+COPY --from=builder --chown=auth:auth /opt/app/logs/ ./logs/
 
 USER auth:auth
 

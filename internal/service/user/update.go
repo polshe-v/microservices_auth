@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 
 	"github.com/polshe-v/microservices_auth/internal/model"
 )
@@ -28,7 +27,6 @@ func (s *serv) Update(ctx context.Context, user *model.UserUpdate) error {
 	})
 
 	if err != nil {
-		log.Print(err)
 		return errors.New("failed to update user info")
 	}
 	return nil

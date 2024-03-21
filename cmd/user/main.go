@@ -2,9 +2,11 @@ package main
 
 import (
 	"context"
-	"log"
+
+	"go.uber.org/zap"
 
 	"github.com/polshe-v/microservices_auth/internal/app"
+	"github.com/polshe-v/microservices_common/pkg/logger"
 )
 
 func main() {
@@ -12,11 +14,11 @@ func main() {
 
 	a, err := app.NewApp(ctx)
 	if err != nil {
-		log.Fatalf("failed to init app: %v", err)
+		logger.Fatal("failed to init app: ", zap.Error(err))
 	}
 
 	err = a.Run()
 	if err != nil {
-		log.Fatalf("failed to run app: %v", err)
+		logger.Fatal("failed to run app: ", zap.Error(err))
 	}
 }

@@ -2,7 +2,8 @@ package app
 
 import (
 	"context"
-	"log"
+
+	"go.uber.org/zap"
 
 	"github.com/polshe-v/microservices_auth/internal/api/access"
 	"github.com/polshe-v/microservices_auth/internal/api/auth"
@@ -24,6 +25,7 @@ import (
 	"github.com/polshe-v/microservices_common/pkg/db"
 	"github.com/polshe-v/microservices_common/pkg/db/pg"
 	"github.com/polshe-v/microservices_common/pkg/db/transaction"
+	"github.com/polshe-v/microservices_common/pkg/logger"
 )
 
 type serviceProvider struct {
@@ -31,6 +33,7 @@ type serviceProvider struct {
 	grpcConfig    config.GrpcConfig
 	httpConfig    config.HTTPConfig
 	swaggerConfig config.SwaggerConfig
+	logConfig     config.LogConfig
 
 	dbClient  db.Client
 	txManager db.TxManager
@@ -57,7 +60,7 @@ func (s *serviceProvider) PgConfig() config.PgConfig {
 	if s.pgConfig == nil {
 		cfg, err := env.NewPgConfig()
 		if err != nil {
-			log.Fatalf("failed to get pg config: %v", err)
+			logger.Fatal("failed to get pg config: ", zap.Error(err))
 		}
 
 		s.pgConfig = cfg
@@ -70,7 +73,7 @@ func (s *serviceProvider) GrpcConfig() config.GrpcConfig {
 	if s.grpcConfig == nil {
 		cfg, err := env.NewGrpcConfig()
 		if err != nil {
-			log.Fatalf("failed to get grpc config: %v", err)
+			logger.Fatal("failed to get grpc config: ", zap.Error(err))
 		}
 
 		s.grpcConfig = cfg
@@ -83,7 +86,7 @@ func (s *serviceProvider) HTTPConfig() config.HTTPConfig {
 	if s.httpConfig == nil {
 		cfg, err := env.NewHTTPConfig()
 		if err != nil {
-			log.Fatalf("failed to get http config: %v", err)
+			logger.Fatal("failed to get http config: ", zap.Error(err))
 		}
 
 		s.httpConfig = cfg
@@ -96,7 +99,7 @@ func (s *serviceProvider) SwaggerConfig() config.SwaggerConfig {
 	if s.swaggerConfig == nil {
 		cfg, err := env.NewSwaggerConfig()
 		if err != nil {
-			log.Fatalf("failed to get swagger config: %v", err)
+			logger.Fatal("failed to get swagger config: ", zap.Error(err))
 		}
 
 		s.swaggerConfig = cfg
@@ -105,16 +108,29 @@ func (s *serviceProvider) SwaggerConfig() config.SwaggerConfig {
 	return s.swaggerConfig
 }
 
+func (s *serviceProvider) LogConfig() config.LogConfig {
+	if s.logConfig == nil {
+		cfg, err := env.NewLogConfig()
+		if err != nil {
+			logger.Fatal("failed to get log config: ", zap.Error(err))
+		}
+
+		s.logConfig = cfg
+	}
+
+	return s.logConfig
+}
+
 func (s *serviceProvider) DBClient(ctx context.Context) db.Client {
 	if s.dbClient == nil {
 		c, err := pg.New(ctx, s.PgConfig().DSN())
 		if err != nil {
-			log.Fatalf("failed to create db client: %v", err)
+			logger.Fatal("failed to create db client: ", zap.Error(err))
 		}
 
 		err = c.DB().Ping(ctx)
 		if err != nil {
-			log.Fatalf("failed to ping database: %v", err)
+			logger.Fatal("failed to ping database: ", zap.Error(err))
 		}
 
 		closer.Add(c.Close)
