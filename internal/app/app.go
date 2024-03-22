@@ -12,6 +12,7 @@ import (
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/natefinch/lumberjack"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rakyll/statik/fs"
 	"github.com/rs/cors"
 	"go.uber.org/zap"
@@ -22,6 +23,7 @@ import (
 
 	"github.com/polshe-v/microservices_auth/internal/config"
 	"github.com/polshe-v/microservices_auth/internal/interceptor"
+	"github.com/polshe-v/microservices_auth/internal/metrics"
 	descAccess "github.com/polshe-v/microservices_auth/pkg/access_v1"
 	descAuth "github.com/polshe-v/microservices_auth/pkg/auth_v1"
 	descUser "github.com/polshe-v/microservices_auth/pkg/user_v1"
@@ -32,10 +34,11 @@ import (
 
 // App structure contains main application structures.
 type App struct {
-	serviceProvider *serviceProvider
-	grpcServer      *grpc.Server
-	httpServer      *http.Server
-	swaggerServer   *http.Server
+	serviceProvider  *serviceProvider
+	grpcServer       *grpc.Server
+	httpServer       *http.Server
+	swaggerServer    *http.Server
+	prometheusServer *http.Server
 }
 
 var configPath string
@@ -91,6 +94,15 @@ func (a *App) Run() error {
 		}
 	}()
 
+	go func() {
+		defer wg.Done()
+
+		err := a.runPrometheusServer()
+		if err != nil {
+			logger.Fatal("failed to run Prometheus server: ", zap.Error(err))
+		}
+	}()
+
 	wg.Wait()
 
 	return nil
@@ -103,6 +115,7 @@ func (a *App) initDeps(ctx context.Context) error {
 		a.initLogger,
 		a.initGrpcServer,
 		a.initHTTPServer,
+		a.initPrometheusServer,
 		a.initSwaggerServer,
 	}
 
@@ -142,6 +155,7 @@ func (a *App) initGrpcServer(ctx context.Context) error {
 		grpc.Creds(creds),
 		grpc.ChainUnaryInterceptor(
 			interceptor.LogInterceptor,
+			interceptor.MetricsInterceptor,
 			interceptor.ValidateInterceptor,
 		),
 	)
@@ -209,6 +223,24 @@ func (a *App) initSwaggerServer(_ context.Context) error {
 	return nil
 }
 
+func (a *App) initPrometheusServer(ctx context.Context) error {
+	err := metrics.Init(ctx)
+	if err != nil {
+		return err
+	}
+
+	mux := http.NewServeMux()
+	mux.Handle("/metrics", promhttp.Handler())
+
+	a.prometheusServer = &http.Server{
+		Addr:              a.serviceProvider.PrometheusConfig().Address(),
+		Handler:           mux,
+		ReadHeaderTimeout: 15 * time.Second,
+	}
+
+	return nil
+}
+
 func (a *App) initLogger(_ context.Context) error {
 	cfg := a.serviceProvider.LogConfig()
 
@@ -266,6 +298,17 @@ func (a *App) runHTTPServer() error {
 	logger.Info("HTTP server running on ", zap.String("address", a.serviceProvider.HTTPConfig().Address()))
 
 	err := a.httpServer.ListenAndServe()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (a *App) runPrometheusServer() error {
+	logger.Info("Prometheus server running on ", zap.String("address", a.serviceProvider.PrometheusConfig().Address()))
+
+	err := a.prometheusServer.ListenAndServe()
 	if err != nil {
 		return err
 	}

@@ -39,6 +39,11 @@ type LogConfig interface {
 	LogLevel() string
 }
 
+// PrometheusConfig provides Prometheus settings from config file.
+type PrometheusConfig interface {
+	Address() string
+}
+
 // Load reads .env config file.
 func Load(path string) error {
 	err := godotenv.Load(path)
