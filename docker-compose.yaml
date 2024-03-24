@@ -74,6 +74,19 @@ services:
       - service-network
     volumes:
       - grafana_volume:/var/lib/grafana
+  jaeger:
+    image: jaegertracing/all-in-one:${JAEGER_IMAGE_TAG}
+    container_name: jaeger
+    ports:
+      - "5775:5775/udp"
+      - "6831:6831/udp"
+      - "6832:6832/udp"
+      - "5778:5778"
+      - "16686:16686" # web
+      - "14268:14268"
+      - "9411:9411"
+    networks:
+      - service-network
 networks:
   service-network:
     name: service-net

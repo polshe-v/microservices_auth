@@ -24,6 +24,7 @@ import (
 	"github.com/polshe-v/microservices_auth/internal/config"
 	"github.com/polshe-v/microservices_auth/internal/interceptor"
 	"github.com/polshe-v/microservices_auth/internal/metrics"
+	"github.com/polshe-v/microservices_auth/internal/tracing"
 	descAccess "github.com/polshe-v/microservices_auth/pkg/access_v1"
 	descAuth "github.com/polshe-v/microservices_auth/pkg/auth_v1"
 	descUser "github.com/polshe-v/microservices_auth/pkg/user_v1"
@@ -113,6 +114,7 @@ func (a *App) initDeps(ctx context.Context) error {
 		a.initConfig,
 		a.initServiceProvider,
 		a.initLogger,
+		a.initTracing,
 		a.initGrpcServer,
 		a.initHTTPServer,
 		a.initPrometheusServer,
@@ -157,6 +159,7 @@ func (a *App) initGrpcServer(ctx context.Context) error {
 			interceptor.LogInterceptor,
 			interceptor.MetricsInterceptor,
 			interceptor.ValidateInterceptor,
+			interceptor.TracingInterceptor,
 		),
 	)
 
@@ -274,6 +277,15 @@ func (a *App) initLogger(_ context.Context) error {
 	)
 
 	logger.Init(core)
+	return nil
+}
+
+func (a *App) initTracing(_ context.Context) error {
+	err := tracing.Init()
+	//err := tracing.InitTracer("http://jaeger:14268/api/traces", "User Service")
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
