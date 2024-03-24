@@ -35,6 +35,7 @@ type serviceProvider struct {
 	swaggerConfig    config.SwaggerConfig
 	prometheusConfig config.PrometheusConfig
 	logConfig        config.LogConfig
+	tracingConfig    config.TracingConfig
 
 	dbClient  db.Client
 	txManager db.TxManager
@@ -133,6 +134,19 @@ func (s *serviceProvider) LogConfig() config.LogConfig {
 	}
 
 	return s.logConfig
+}
+
+func (s *serviceProvider) TracingConfig() config.TracingConfig {
+	if s.tracingConfig == nil {
+		cfg, err := env.NewTracingConfig()
+		if err != nil {
+			logger.Fatal("failed to get tracing config: ", zap.Error(err))
+		}
+
+		s.tracingConfig = cfg
+	}
+
+	return s.tracingConfig
 }
 
 func (s *serviceProvider) DBClient(ctx context.Context) db.Client {

@@ -23,6 +23,12 @@ type SwaggerConfig interface {
 	Address() string
 }
 
+// TracingConfig provides tracing settings from config file.
+type TracingConfig interface {
+	Address() string
+	ServiceName() string
+}
+
 // PgConfig provides PostgreSQL settings from config file.
 type PgConfig interface {
 	DSN() string

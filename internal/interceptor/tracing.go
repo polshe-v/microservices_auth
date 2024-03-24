@@ -3,39 +3,32 @@ package interceptor
 import (
 	"context"
 
-	opentracing "github.com/opentracing/opentracing-go"
-	"github.com/opentracing/opentracing-go/ext"
-	"github.com/uber/jaeger-client-go"
+	"go.opentelemetry.io/otel/codes"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
+
+	"github.com/polshe-v/microservices_auth/internal/tracing"
 )
 
 const traceIDKey = "x-trace-id"
 
 // TracingInterceptor creates traces for fucntion calls.
 func TracingInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-	span, ctx := opentracing.StartSpanFromContext(ctx, info.FullMethod)
-	defer span.Finish()
+	ctx, span := tracing.Start(ctx, info.FullMethod)
+	defer span.End()
 
-	spanContext, ok := span.Context().(jaeger.SpanContext)
-	if ok {
-		ctx = metadata.NewOutgoingContext(ctx, metadata.Pairs(traceIDKey, spanContext.TraceID().String()))
+	traceID := span.SpanContext().TraceID().String()
+	ctx = metadata.NewOutgoingContext(ctx, metadata.Pairs(traceIDKey, traceID))
 
-		header := metadata.New(map[string]string{traceIDKey: spanContext.TraceID().String()})
-		err := grpc.SendHeader(ctx, header)
-		if err != nil {
-			return nil, err
-		}
+	header := metadata.New(map[string]string{traceIDKey: traceID})
+	err := grpc.SendHeader(ctx, header)
+	if err != nil {
+		return nil, err
 	}
 
 	res, err := handler(ctx, req)
 	if err != nil {
-		ext.Error.Set(span, true)
-		span.SetTag("err", err.Error())
-	} else {
-		// Ответ может быть большим, поэтому не стоит добавлять его в теги
-		// Здесь это лишь пример, как можно добавить ответ в тег
-		span.SetTag("res", res)
+		span.SetStatus(codes.Error, err.Error())
 	}
 
 	return res, err

@@ -15,10 +15,17 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rakyll/statik/fs"
 	"github.com/rs/cors"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/sdk/resource"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.24.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
 
 	"github.com/polshe-v/microservices_auth/internal/config"
@@ -280,12 +287,55 @@ func (a *App) initLogger(_ context.Context) error {
 	return nil
 }
 
-func (a *App) initTracing(_ context.Context) error {
-	err := tracing.Init()
-	//err := tracing.InitTracer("http://jaeger:14268/api/traces", "User Service")
+func (a *App) initTracing(ctx context.Context) error {
+	cfg := a.serviceProvider.TracingConfig()
+
+	res, err := resource.New(ctx,
+		resource.WithAttributes(
+			// the service name used to display traces in backends
+			semconv.ServiceName(cfg.ServiceName()),
+		),
+	)
 	if err != nil {
 		return err
 	}
+
+	conn, err := grpc.Dial(cfg.Address(),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		return err
+	}
+
+	// Set up a trace exporter
+	traceExporter, err := otlptracegrpc.New(ctx, otlptracegrpc.WithGRPCConn(conn))
+	if err != nil {
+		return err
+	}
+
+	// Register the trace exporter with a TracerProvider, using a batch
+	// span processor to aggregate spans before export.
+	bsp := sdktrace.NewBatchSpanProcessor(traceExporter)
+	tracerProvider := sdktrace.NewTracerProvider(
+		sdktrace.WithSampler(sdktrace.AlwaysSample()),
+		sdktrace.WithResource(res),
+		sdktrace.WithSpanProcessor(bsp),
+	)
+	otel.SetTracerProvider(tracerProvider)
+
+	// Set global propagator to tracecontext (the default is no-op).
+	otel.SetTextMapPropagator(propagation.TraceContext{})
+
+	// Shutdown will flush any remaining spans and shut down the exporter.
+	closer.Add(func() error {
+		return tracerProvider.Shutdown(ctx)
+	})
+
+	err = tracing.InitGlobalTracer(cfg.ServiceName())
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
