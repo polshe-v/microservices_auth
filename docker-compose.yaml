@@ -2,6 +2,8 @@ version: '3'
 
 volumes:
   postgres_volume:
+  prometheus_volume:
+  grafana_volume:
 
 services:
   auth:
@@ -13,6 +15,7 @@ services:
       - "${GRPC_PORT}:${GRPC_PORT}"
       - "${HTTP_PORT}:${HTTP_PORT}"
       - "${SWAGGER_PORT}:${SWAGGER_PORT}"
+      - "${PROMETHEUS_HTTP_PORT}:${PROMETHEUS_HTTP_PORT}"
     networks:
       - service-network
     depends_on:
@@ -47,6 +50,38 @@ services:
     depends_on:
       db-auth:
         condition: service_healthy
+  prometheus:
+    image: prom/prometheus:${PROMETHEUS_IMAGE_TAG}
+    container_name: prometheus
+    env_file:
+      - ${ENV}.env
+    ports:
+      - "9090:9090"
+    networks:
+      - service-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./metrics/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./metrics/alerts.yml:/etc/prometheus/alerts.yml
+      - prometheus_volume:/prometheus
+  grafana:
+    image: grafana/grafana-oss:${GRAFANA_IMAGE_TAG}
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    networks:
+      - service-network
+    volumes:
+      - grafana_volume:/var/lib/grafana
+  jaeger:
+    image: jaegertracing/all-in-one:${JAEGER_IMAGE_TAG}
+    container_name: jaeger
+    ports:
+      - "16686:16686" # web
+      - "4317:4317"   # OTLP over gRPC
+    networks:
+      - service-network
 networks:
   service-network:
     name: service-net

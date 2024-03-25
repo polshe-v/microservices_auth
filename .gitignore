@@ -31,3 +31,6 @@ coverage.*
 
 # Certificates and private keys
 /tls/
+
+# Logs
+/logs/

@@ -26,6 +26,7 @@ install-deps:
 	GOBIN=$(LOCAL_BIN) go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@v2.19.1
 	GOBIN=$(LOCAL_BIN) go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@v2.19.1
 	GOBIN=$(LOCAL_BIN) go install github.com/rakyll/statik@v0.1.7
+	GOBIN=$(LOCAL_BIN) go install github.com/bojand/ghz/cmd/ghz@v0.117.0
 
 get-protoc-deps:
 	go get -u google.golang.org/protobuf/cmd/protoc-gen-go
@@ -130,6 +131,28 @@ test-coverage:
 	rm $(TESTS_COVERAGE_FILE).tmp
 	go tool cover -html=$(TESTS_COVERAGE_FILE) -o coverage.html
 	go tool cover -func=$(TESTS_COVERAGE_FILE) | grep "total"
+
+load-test: check-env
+	$(LOCAL_BIN)/ghz \
+		--proto api/user_v1/user.proto \
+		--import-paths=vendor.protogen/ \
+		--cacert=tls/ca.pem \
+		--call user_v1.UserV1.Get \
+		--data '{"id": 1}' \
+		--rps 100 \
+		--total 3000 \
+		${GRPC_HOST}:${GRPC_PORT}
+
+load-test-error: check-env
+	$(LOCAL_BIN)/ghz \
+		--proto api/user_v1/user.proto \
+		--import-paths=vendor.protogen/ \
+		--cacert=tls/ca.pem \
+		--call user_v1.UserV1.Get \
+		--data '{"id": 0}' \
+		--rps 100 \
+		--total 3000 \
+		${GRPC_HOST}:${GRPC_PORT}
 
 # ##### #
 # BUILD #

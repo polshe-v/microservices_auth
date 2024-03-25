@@ -1,0 +1,15 @@
+global:
+  scrape_interval:     2s # Metrics scraping interval
+  evaluation_interval: 2s # Aggregation and alerting rules evaluation interval
+
+rule_files:
+  - "alerts.yml"
+
+scrape_configs:
+  - job_name: "prometheus"
+    static_configs:
+      - targets: [ "localhost:9090" ]
+
+  - job_name: "app"
+    static_configs:
+      - targets: [ "host.docker.internal:2112" ]
