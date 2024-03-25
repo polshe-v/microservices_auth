@@ -1,9 +1,12 @@
 # Auth Service
 
-Auth Service includes 3 docker containers:
+Auth Service includes 6 docker containers:
 - auth - server processing authentication requests.
 - postgres - permanent storage of data.
 - migrator - performs migration in database using goose package.
+- prometheus - scrapes application and its own metrics.
+- grafana - visualizes metrics.
+- jaeger - visualizes traces.
 
 ## Deploy
 
