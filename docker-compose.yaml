@@ -62,8 +62,8 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
-      - ./telemetry/prometheus.yml:/etc/prometheus/prometheus.yml
-      - ./telemetry/alerts.yml:/etc/prometheus/alerts.yml
+      - ./metrics/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./metrics/alerts.yml:/etc/prometheus/alerts.yml
       - prometheus_volume:/prometheus
   grafana:
     image: grafana/grafana-oss:${GRAFANA_IMAGE_TAG}
