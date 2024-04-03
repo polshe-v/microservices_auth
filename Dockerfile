@@ -1,4 +1,4 @@
-FROM golang:1.22.0-alpine3.19 AS builder
+FROM golang:1.22.1-alpine3.19 AS builder
 ARG ENV
 
 RUN apk update && apk upgrade --available && \

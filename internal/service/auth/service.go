@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	refreshTokenExpiration    = 60 * time.Minute
-	accessTokenExpiration     = 5 * time.Minute
+	refreshTokenExpiration    = 360 * time.Minute
+	accessTokenExpiration     = 30 * time.Minute
 	refreshTokenSecretKeyName = "refresh"
 	accessTokenSecretKeyName  = "access"
 )
