@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	accessTokenExpiration    = 5 * time.Minute
+	accessTokenExpiration    = 30 * time.Minute
 	accessTokenSecretKeyName = "access"
 )
 

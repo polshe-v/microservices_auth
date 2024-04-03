@@ -42,7 +42,7 @@ func TestGetAccessToken(t *testing.T) {
 
 		refreshToken          = "refresh_token"
 		accessToken           = "access_token"
-		accessTokenExpiration = 5 * time.Minute
+		accessTokenExpiration = 30 * time.Minute
 
 		username = "username"
 		role     = "USER"
