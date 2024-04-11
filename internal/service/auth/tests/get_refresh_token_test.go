@@ -36,7 +36,7 @@ func TestGetRefreshToken(t *testing.T) {
 		refreshKeyName         = "refresh"
 		refreshKey             = "refresh_key"
 		refreshKeyBytes        = []byte("refresh_key")
-		refreshTokenExpiration = 60 * time.Minute
+		refreshTokenExpiration = 360 * time.Minute
 		oldRefreshToken        = "old_refresh_token"
 		refreshToken           = "refresh_token"
 

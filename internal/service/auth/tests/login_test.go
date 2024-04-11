@@ -47,7 +47,7 @@ func TestLogin(t *testing.T) {
 		refreshKeyName         = "refresh"
 		refreshKey             = "refresh_key"
 		refreshKeyBytes        = []byte("refresh_key")
-		refreshTokenExpiration = 60 * time.Minute
+		refreshTokenExpiration = 360 * time.Minute
 		refreshToken           = "refresh_token"
 
 		keyRepositoryErr  = fmt.Errorf("failed to generate token")
