@@ -300,7 +300,7 @@ func (a *App) initTracing(ctx context.Context) error {
 		return err
 	}
 
-	conn, err := grpc.Dial(cfg.Address(),
+	conn, err := grpc.NewClient(cfg.Address(),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {
