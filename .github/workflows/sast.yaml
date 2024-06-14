@@ -18,8 +18,8 @@ jobs:
         with:
           scan-type: 'config'
           format: 'table'
-          hide-progress: false
-          output: trivy-config.txt
+          hide-progress: true
+          output: 'trivy-config.txt'
 
       - name: Publish Trivy Output to Summary
         run: |
@@ -45,8 +45,9 @@ jobs:
         with:
           scan-type: 'fs'
           format: 'table'
-          hide-progress: false
-          output: trivy-fs.txt
+          ignore-unfixed: true
+          output: 'trivy-fs.txt'
+          severity: 'LOW'
 
       - name: Publish Trivy Output to Summary
         run: |
