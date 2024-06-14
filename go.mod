@@ -14,7 +14,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/natefinch/lumberjack v2.0.0+incompatible
 	github.com/pkg/errors v0.9.1
-	github.com/polshe-v/microservices_common v0.0.0-20240321123626-ed4c8e6b387f
+	github.com/polshe-v/microservices_common v0.0.0-20240614134025-0c890c19055d
 	github.com/prometheus/client_golang v1.19.1
 	github.com/rakyll/statik v0.1.7
 	github.com/rs/cors v1.11.0
