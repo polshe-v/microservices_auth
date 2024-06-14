@@ -1,0 +1,19 @@
+name: SAST
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  zap_scan:
+    runs-on: ubuntu-22.04
+    name: Scan the web application
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: ZAP Scan
+        uses: zaproxy/action-api-scan@v0.7.0
+        with:
+          target: 'https://www.zaproxy.org/'

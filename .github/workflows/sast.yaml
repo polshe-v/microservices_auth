@@ -7,7 +7,7 @@ on:
     branches: [ main, master ]
 
 jobs:
-  scan:
+  scan-config:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout code
@@ -24,7 +24,33 @@ jobs:
         run: |
           if [[ -s trivy.txt ]]; then
             {
-              echo "### Security Output"
+              echo "### Configuration scan"
+              echo "<details><summary>Click to expand</summary>"
+              echo ""
+              echo '```terraform'
+              cat trivy.txt
+              echo '```'
+              echo "</details>"
+            } >> $GITHUB_STEP_SUMMARY
+          fi
+  scan-fs:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner in IaC mode
+        uses: aquasecurity/trivy-action@0.22.0
+        with:
+          scan-type: config
+          hide-progress: false
+          output: trivy.txt
+
+      - name: Publish Trivy Output to Summary
+        run: |
+          if [[ -s trivy.txt ]]; then
+            {
+              echo "### FS scan"
               echo "<details><summary>Click to expand</summary>"
               echo ""
               echo '```terraform'
