@@ -1,11 +1,11 @@
-#name: DAST
-#
-#on:
-#  push:
-#    branches: [ main, master ]
-#  pull_request:
-#    branches: [ main, master ]
-#
+name: DAST
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
 #jobs:
 #  scan:
 #    runs-on: ubuntu-22.04
