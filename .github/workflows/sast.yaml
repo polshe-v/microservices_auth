@@ -1,0 +1,64 @@
+name: SAST
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  scan-config:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner in IaC mode
+        uses: aquasecurity/trivy-action@0.22.0
+        with:
+          scan-type: 'config'
+          format: 'table'
+          hide-progress: true
+          output: 'trivy-config.txt'
+
+      - name: Publish Trivy Output to Summary
+        run: |
+          if [[ -s trivy-config.txt ]]; then
+            {
+              echo "### Configuration scan"
+              echo "<details><summary>Click to expand</summary>"
+              echo ""
+              echo '```terraform'
+              cat trivy-config.txt
+              echo '```'
+              echo "</details>"
+            } >> $GITHUB_STEP_SUMMARY
+          fi
+  scan-fs:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner in IaC mode
+        uses: aquasecurity/trivy-action@0.22.0
+        with:
+          scan-type: 'fs'
+          format: 'table'
+          ignore-unfixed: true
+          output: 'trivy-fs.txt'
+          severity: 'LOW'
+
+      - name: Publish Trivy Output to Summary
+        run: |
+          if [[ -s trivy-fs.txt ]]; then
+            {
+              echo "### FS scan"
+              echo "<details><summary>Click to expand</summary>"
+              echo ""
+              echo '```terraform'
+              cat trivy-fs.txt
+              echo '```'
+              echo "</details>"
+            } >> $GITHUB_STEP_SUMMARY
+          fi
