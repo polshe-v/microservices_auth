@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 
+	redigo "github.com/gomodule/redigo/redis"
 	"go.uber.org/zap"
 
 	"github.com/polshe-v/microservices_auth/internal/api/access"
@@ -21,6 +22,8 @@ import (
 	userService "github.com/polshe-v/microservices_auth/internal/service/user"
 	"github.com/polshe-v/microservices_auth/internal/tokens"
 	"github.com/polshe-v/microservices_auth/internal/tokens/jwt"
+	"github.com/polshe-v/microservices_common/pkg/cache"
+	"github.com/polshe-v/microservices_common/pkg/cache/redis"
 	"github.com/polshe-v/microservices_common/pkg/closer"
 	"github.com/polshe-v/microservices_common/pkg/db"
 	"github.com/polshe-v/microservices_common/pkg/db/pg"
@@ -36,9 +39,13 @@ type serviceProvider struct {
 	prometheusConfig config.PrometheusConfig
 	logConfig        config.LogConfig
 	tracingConfig    config.TracingConfig
+	redisConfig      config.RedisConfig
 
 	dbClient  db.Client
 	txManager db.TxManager
+
+	redisPool   *redigo.Pool
+	redisClient cache.Client
 
 	userRepository   repository.UserRepository
 	keyRepository    repository.KeyRepository
@@ -149,6 +156,19 @@ func (s *serviceProvider) TracingConfig() config.TracingConfig {
 	return s.tracingConfig
 }
 
+func (s *serviceProvider) RedisConfig() config.RedisConfig {
+	if s.redisConfig == nil {
+		cfg, err := env.NewRedisConfig()
+		if err != nil {
+			logger.Fatal("failed to get redis config: ", zap.Error(err))
+		}
+
+		s.redisConfig = cfg
+	}
+
+	return s.redisConfig
+}
+
 func (s *serviceProvider) DBClient(ctx context.Context) db.Client {
 	if s.dbClient == nil {
 		c, err := pg.New(ctx, s.PgConfig().DSN())
@@ -174,6 +194,28 @@ func (s *serviceProvider) TxManager(ctx context.Context) db.TxManager {
 		s.txManager = transaction.NewTransactionManager(s.DBClient(ctx).DB())
 	}
 	return s.txManager
+}
+
+func (s *serviceProvider) RedisClient() cache.RedisClient {
+	if s.redisClient == nil {
+		s.redisClient = redis.NewClient(s.RedisPool(), s.RedisConfig().ConnectionTimeout())
+	}
+
+	return s.redisClient
+}
+
+func (s *serviceProvider) RedisPool() *redigo.Pool {
+	if s.redisPool == nil {
+		s.redisPool = &redigo.Pool{
+			MaxIdle:     s.RedisConfig().MaxIdle(),
+			IdleTimeout: s.RedisConfig().IdleTimeout(),
+			DialContext: func(ctx context.Context) (redigo.Conn, error) {
+				return redigo.DialContext(ctx, "tcp", s.RedisConfig().Address())
+			},
+		}
+	}
+
+	return s.redisPool
 }
 
 func (s *serviceProvider) UserRepository(ctx context.Context) repository.UserRepository {
