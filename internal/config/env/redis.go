@@ -18,9 +18,9 @@ const (
 	redisIdleTimeoutEnvName       = "REDIS_IDLE_TIMEOUT"
 	redisMaxIdleEnvName           = "REDIS_MAX_IDLE"
 
-	defaultConnectionTimeout = 10 // seconds
-	defaultIdleTimeout       = 10 // seconds
-	defaultMaxIdle           = 5  // connections
+	defaultConnectionTimeout = 5   // seconds
+	defaultIdleTimeout       = 300 // seconds
+	defaultMaxIdle           = 10  // connections
 )
 
 type redisConfig struct {

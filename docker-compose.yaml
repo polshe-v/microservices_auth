@@ -4,6 +4,7 @@ volumes:
   postgres_volume:
   prometheus_volume:
   grafana_volume:
+  redis_volume:
 
 services:
   auth:
@@ -82,6 +83,16 @@ services:
       - "4317:4317"   # OTLP over gRPC
     networks:
       - service-network
+  redis:
+    image: redis:7.2.5-alpine3.20
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_volume:/data
+    networks:
+      - service-network
+
 networks:
   service-network:
     name: service-net
