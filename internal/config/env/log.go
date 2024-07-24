@@ -20,9 +20,9 @@ const (
 
 	defaultLogDirectory = "logs/"
 	defaultLogFilename  = "auth_service.log"
-	defaultLogMaxSize   = 10 // in MB
+	defaultLogMaxSize   = 10 // MB
 	defaultLogMaxFiles  = 3
-	defaultLogMaxAge    = 7 // in days
+	defaultLogMaxAge    = 7 // days
 	defaultLogLevel     = "warn"
 )
 
