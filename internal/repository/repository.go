@@ -29,3 +29,9 @@ type AccessRepository interface {
 type LogRepository interface {
 	Log(ctx context.Context, log *model.Log) error
 }
+
+// CacheRepository is the interface for cache communication.
+type CacheRepository interface {
+	CreateRecord(ctx context.Context, user *model.User) error
+	GetRecord(ctx context.Context, id int64) (*model.User, error)
+}

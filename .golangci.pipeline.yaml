@@ -47,7 +47,7 @@ issues:
     - vendor
     - var
     - tmp
-    - .cache
+    - \.cache
   exclude-files:
     - \.pb\.go$
     - \.pb\.gw\.go$

@@ -1,6 +1,8 @@
 package config
 
 import (
+	"time"
+
 	"github.com/joho/godotenv"
 )
 
@@ -32,6 +34,14 @@ type TracingConfig interface {
 // PgConfig provides PostgreSQL settings from config file.
 type PgConfig interface {
 	DSN() string
+}
+
+// RedisConfig provides Redis settings from config file.
+type RedisConfig interface {
+	Address() string
+	ConnectionTimeout() time.Duration
+	IdleTimeout() time.Duration
+	MaxIdle() int
 }
 
 // LogConfig provides log settings from config file.
