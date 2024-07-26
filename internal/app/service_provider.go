@@ -13,6 +13,7 @@ import (
 	"github.com/polshe-v/microservices_auth/internal/config/env"
 	"github.com/polshe-v/microservices_auth/internal/repository"
 	accessRepository "github.com/polshe-v/microservices_auth/internal/repository/access"
+	cacheRepository "github.com/polshe-v/microservices_auth/internal/repository/cache"
 	keyRepository "github.com/polshe-v/microservices_auth/internal/repository/key"
 	logRepository "github.com/polshe-v/microservices_auth/internal/repository/log"
 	userRepository "github.com/polshe-v/microservices_auth/internal/repository/user"
@@ -51,12 +52,15 @@ type serviceProvider struct {
 	keyRepository    repository.KeyRepository
 	accessRepository repository.AccessRepository
 	logRepository    repository.LogRepository
-	userService      service.UserService
-	authService      service.AuthService
-	accessService    service.AccessService
-	userImpl         *user.Implementation
-	authImpl         *auth.Implementation
-	accessImpl       *access.Implementation
+	cacheRepository  repository.CacheRepository
+
+	userService   service.UserService
+	authService   service.AuthService
+	accessService service.AccessService
+
+	userImpl   *user.Implementation
+	authImpl   *auth.Implementation
+	accessImpl *access.Implementation
 
 	tokenOperations tokens.TokenOperations
 }
@@ -196,7 +200,7 @@ func (s *serviceProvider) TxManager(ctx context.Context) db.TxManager {
 	return s.txManager
 }
 
-func (s *serviceProvider) RedisClient() cache.RedisClient {
+func (s *serviceProvider) RedisClient() cache.Client {
 	if s.redisClient == nil {
 		s.redisClient = redis.NewClient(s.RedisPool(), s.RedisConfig().ConnectionTimeout())
 	}
@@ -246,9 +250,16 @@ func (s *serviceProvider) LogRepository(ctx context.Context) repository.LogRepos
 	return s.logRepository
 }
 
+func (s *serviceProvider) CacheRepository(ctx context.Context) repository.CacheRepository {
+	if s.cacheRepository == nil {
+		s.cacheRepository = cacheRepository.NewRepository(s.RedisClient())
+	}
+	return s.cacheRepository
+}
+
 func (s *serviceProvider) UserService(ctx context.Context) service.UserService {
 	if s.userService == nil {
-		s.userService = userService.NewService(s.UserRepository(ctx), s.LogRepository(ctx), s.TxManager(ctx))
+		s.userService = userService.NewService(s.UserRepository(ctx), s.CacheRepository(ctx), s.LogRepository(ctx), s.TxManager(ctx))
 	}
 	return s.userService
 }

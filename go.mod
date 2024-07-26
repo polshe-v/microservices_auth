@@ -8,13 +8,14 @@ require (
 	github.com/gojuno/minimock/v3 v3.3.13
 	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/golang/protobuf v1.5.4
+	github.com/gomodule/redigo v1.9.2
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.20.0
 	github.com/jackc/pgerrcode v0.0.0-20240316143900-6e2875d9b438
 	github.com/jackc/pgx/v5 v5.6.0
 	github.com/joho/godotenv v1.5.1
 	github.com/natefinch/lumberjack v2.0.0+incompatible
 	github.com/pkg/errors v0.9.1
-	github.com/polshe-v/microservices_common v0.0.0-20240614134025-0c890c19055d
+	github.com/polshe-v/microservices_common v0.0.0-20240725124217-0fcebed7fef8
 	github.com/prometheus/client_golang v1.19.1
 	github.com/rakyll/statik v0.1.7
 	github.com/rs/cors v1.11.0

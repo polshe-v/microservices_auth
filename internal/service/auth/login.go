@@ -13,7 +13,7 @@ func (s *serv) Login(ctx context.Context, creds *model.UserCreds) (string, error
 	// Get role and hashed password by username from storage
 	authInfo, err := s.userRepository.GetAuthInfo(ctx, creds.Username)
 	if err != nil {
-		return "", errors.New("user not found")
+		return "", model.ErrorUserNotFound
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(authInfo.Password), []byte(creds.Password))
